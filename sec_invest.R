@@ -3,7 +3,7 @@ library("RPostgreSQL")
 pg <- dbConnect(PostgreSQL())
 
 # Now get the data
-sql <- paste(readLines("restatement_proxies.sql"), collapse="\n")
-restatement_proxies <- dbGetQuery(pg, sql)
+sql <- paste(readLines("sec_invest.sql"), collapse="\n")
+sec_invest <- dbGetQuery(pg, sql)
 
 dbDisconnect(pg)
