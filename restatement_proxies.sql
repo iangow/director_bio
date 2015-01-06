@@ -1,8 +1,4 @@
-SET work_mem='3GB';
-    
-WITH 
-
-equilar AS(
+WITH equilar AS(
     SELECT trim(cusip) AS cusip,
         director.equilar_id(company_id) AS equilar_id, fy_end
     FROM director.co_fin),
@@ -65,7 +61,6 @@ matching_year AS (
     USING (equilar_id)
     WHERE fy_end <= file_date
     GROUP BY cik, file_date, equilar_id),
-
 -- Get names of directors from Equilar
 directors AS (
     SELECT cik, file_date, array_agg(director) AS directors
@@ -103,4 +98,5 @@ FROM restatement_w_directors
 LEFT JOIN matched_filings
 USING (cik, file_date)
 LEFT JOIN proxy_filings
-USING (cik, date_filed);
+USING (cik, date_filed)
+
