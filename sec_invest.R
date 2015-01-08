@@ -14,16 +14,21 @@ sec_invest_dirs <-
         SET work_mem='3GB';
         
         WITH raw_data AS (
-            SELECT director.parse_name(director) AS director_name, 
+            SELECT 
+                director.parse_name(director) AS director_name, 
                 director.equilar_id(director_id) AS equilar_id,
                 director.director_id(director_id) AS equilar_director_id, 
                 extract(year FROM fy_end)::integer AS year, 
                 age, company
-            FROM director.director),
-            
-        multiple_boards AS (
+            FROM director.director
+        
+            ORDER BY director_name
+            LIMIT 100),
+        
+         multiple_boards AS (
             SELECT (director_name).last_name, (director_name).first_name, 
-                year, age, array_agg(equilar_id) AS equilar_ids,
+                year, age,
+                array_agg(equilar_id) AS equilar_ids,
                 array_agg(equilar_director_id) AS equilar_director_ids,
                 array_agg(company) AS companies
             FROM raw_data
@@ -31,7 +36,7 @@ sec_invest_dirs <-
                 year, age
             HAVING array_length(array_agg(equilar_director_id), 1) > 1
             ORDER BY (director_name).last_name, (director_name).first_name, 
-                year, age),
+                year, age)    
 
         sec_invest_dirs AS (
             SELECT cik, equilar_id,
