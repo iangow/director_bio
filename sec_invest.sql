@@ -39,7 +39,7 @@ equilar_w_ciks AS (
     FROM equilar AS a
     LEFT JOIN permno_cusip AS b
     USING (cusip)
-    LEFT JOIN permno_ciks
+    LEFT JOIN director_bio.permno_ciks
     USING (permno)),
 
 -- Get restatments involving SEC investigations from Audit Analytics
@@ -47,62 +47,12 @@ restatements AS (
     SELECT company_fkey::integer AS cik, file_date, 
         res_begin_date, res_end_date
     FROM audit.feed09filing
-    WHERE res_sec_invest),
+    WHERE res_sec_invest)
 
--- Merge with Equilar using CIKs
-restatement_w_equilar AS (
-    SELECT DISTINCT cik, file_date, res_begin_date, equilar_id
-    FROM restatements AS a
-    LEFT JOIN equilar_w_ciks AS b
-    ON a.cik=any(b.ciks)),
-
--- Find year on Equilar that precedes the filing of the restatement
-matching_year AS (
-    SELECT cik, file_date, equilar_id, max(fy_end) AS fy_end
-    FROM restatement_w_equilar
-    LEFT JOIN equilar_w_ciks
-    USING (equilar_id)
-    WHERE fy_end <= file_date
-    GROUP BY cik, file_date, equilar_id),
-
--- Get names of directors from Equilar
-directors AS (
-    SELECT cik, file_date, a.fy_end,
-        array_agg(director.director_id(director_id)) AS director_ids,
-        array_agg(director) AS directors
-    FROM matching_year AS a
-    INNER JOIN director.director AS b
-    ON a.equilar_id=director.equilar_id(b.director_id) AND a.fy_end=b.fy_end
-    GROUP BY cik, file_date, a.fy_end),
-
--- Merge in director names with merged restatement data
-restatement_w_directors AS (
-    SELECT *
-    FROM restatement_w_equilar
-    LEFT JOIN directors
-    USING (cik, file_date)),
-                   
--- Get all proxy filings on EDGAR
-proxy_filings AS (
-    SELECT cik::integer, date_filed, file_name
-    FROM filings.filings
-    WHERE form_type ~ '^DEF 14'),
-
--- Identify the most recent filing preceding the filing of the restatement
--- Not sure that this is always the one we'd want.
-matched_filings AS (
-    SELECT cik, file_date, max(date_filed) AS date_filed
-    FROM proxy_filings 
-    INNER JOIN restatements
-    USING (cik)
-    WHERE date_filed <= file_date
-    GROUP BY cik, file_date)
-
--- Now merge restatement data with data on proxy filings
-SELECT *
-FROM restatement_w_directors
-LEFT JOIN matched_filings
-USING (cik, file_date)
-LEFT JOIN proxy_filings
-USING (cik, date_filed)
-
+-- Merge with Equilar using CIKs and
+-- year on Equilar that precedes the filing of the restatement
+SELECT cik, file_date, equilar_id, max(fy_end) AS fy_end
+FROM restatements AS a
+LEFT JOIN equilar_w_ciks AS b
+ON a.cik=any(b.ciks) AND b.fy_end <= a.file_date
+GROUP BY cik, file_date, equilar_id;
