@@ -11,8 +11,7 @@ rs <- dbGetQuery(pg, sql)
 
 sec_invest_dirs <- dbGetQuery(pg, "
     SELECT * 
-    FROM director_bio.sec_invest_dirs
-                                  ")
+    FROM director_bio.sec_invest_dirs")
 
 sec_invest_proxies <- dbGetQuery(pg, "
     SET work_mem='3GB';
