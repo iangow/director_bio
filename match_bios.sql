@@ -27,7 +27,7 @@ matched_director_bios AS (
 	FROM unnested_data AS a
 	INNER JOIN unnested_data AS b
 	USING (director_name)
-	WHERE a.director_id != b.director_id)
+	WHERE a.director_id < b.director_id)
 
 SELECT *
 FROM matched_director_bios;
