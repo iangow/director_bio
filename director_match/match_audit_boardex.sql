@@ -50,20 +50,20 @@ restatement_directors AS (
 -- (ii) director was still there when restatement was filed
 -- (iii) director still there today (IS NULL)
 boardex_audit AS (
-    SELECT *
-    FROM boardex_directors AS a
-    INNER JOIN restatement_directors AS b
-    USING (directorid)
-    WHERE restate_file_date <= date_start_role
-        OR restate_file_date <= date_end_role 
-        OR date_end_role IS NULL)
+    SELECT b.restate_cik, b.restate_file_date, a.*
+    FROM restatement_directors AS b
+    LEFT JOIN boardex_directors AS a
+    ON a.directorid=b.directorid 
+        AND (restate_file_date <= date_start_role
+            OR restate_file_date <= date_end_role 
+            OR date_end_role IS NULL))
         
 SELECT a.*, c.date_filed, c.file_name
 FROM boardex_audit AS a
-INNER JOIN boardex_2014.company_profile_details AS b
+LEFT JOIN boardex_2014.company_profile_details AS b
 USING (boardid)
-LEFT JOIN filings.filings AS c
+LEFT JOIN 
+    (SELECT * FROM filings.filings WHERE form_type='DEF 14A') AS c
 ON b.cikcode=c.cik::integer AND c.date_filed >= a.restate_file_date 
     AND (c.date_filed <= a.date_end_role OR a.date_end_role IS NULL)
-WHERE form_type='DEF 14A'
 ORDER BY restate_cik, restate_file_date, directorid, boardid, date_filed;
