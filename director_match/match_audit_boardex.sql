@@ -56,14 +56,25 @@ boardex_audit AS (
     ON a.directorid=b.directorid 
         AND (restate_file_date <= date_start_role
             OR restate_file_date <= date_end_role 
-            OR date_end_role IS NULL))
+            OR date_end_role IS NULL)),
         
-SELECT a.*, c.date_filed, c.file_name
-FROM boardex_audit AS a
-LEFT JOIN boardex_2014.company_profile_details AS b
-USING (boardid)
-LEFT JOIN 
-    (SELECT * FROM filings.filings WHERE form_type='DEF 14A') AS c
-ON b.cikcode=c.cik::integer AND c.date_filed >= a.restate_file_date 
-    AND (c.date_filed <= a.date_end_role OR a.date_end_role IS NULL)
+all_filings AS (
+    SELECT a.*, c.date_filed, c.file_name
+    FROM boardex_audit AS a
+    LEFT JOIN boardex_2014.company_profile_details AS b
+    USING (boardid)
+    LEFT JOIN 
+        (SELECT * FROM filings.filings WHERE form_type='DEF 14A') AS c
+    ON b.cikcode=c.cik::integer AND c.date_filed >= a.restate_file_date 
+        AND (c.date_filed <= a.date_end_role OR a.date_end_role IS NULL)),
+
+first_filings AS (
+    SELECT directorid, boardid, min(date_filed) AS date_filed
+    FROM all_filings
+    GROUP BY directorid, boardid)
+
+SELECT a.*
+FROM all_filings AS a
+INNER JOIN first_filings
+USING (directorid, boardid, date_filed)
 ORDER BY restate_cik, restate_file_date, directorid, boardid, date_filed;
