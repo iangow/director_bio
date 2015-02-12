@@ -1,5 +1,5 @@
 WITH directors AS (
-    SELECT director.equilar_id(director_id) AS equilar_id, fy_end, director
+    SELECT director.equilar_id(director_id) AS equilar_id, fy_end, director, term_end_date
     FROM director.director)
 SELECT *,
     'http://www.sec.gov/Archives/' || regexp_replace(file_name, 
