@@ -18,7 +18,7 @@ $BODY$
         
         # Point these toward your download of Stanford NER
         # Need to figure out which is appropriate classifier to use
-        NER_JAR = '/Users/igow/stanford-ner-2014-10-26/stanford-ner.jar'
+        NER_JAR = 'stanford-ner.jar'
         NER_CLASSIFIER = '/Users/igow/stanford-ner-2014-10-26/classifiers/english.muc.7class.distsim.crf.ser.gz'
 
         # Create Stanford NER Tagger
