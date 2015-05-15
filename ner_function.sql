@@ -18,8 +18,8 @@ $BODY$
         
         # Point these toward your download of Stanford NER
         # Need to figure out which is appropriate classifier to use
-        NER_JAR = '/Users/igow/stanford-ner-2014-10-26/stanford-ner.jar'
-        NER_CLASSIFIER = '/Users/igow/stanford-ner-2014-10-26/classifiers/english.muc.7class.distsim.crf.ser.gz'
+        NER_JAR = '/opt/local/share/java/stanford-ner/stanford-ner.jar'
+        NER_CLASSIFIER = '/opt/local/share/java/stanford-ner/classifiers/english.muc.7class.distsim.crf.ser.gz'
 
         # Create Stanford NER Tagger
         from nltk.tag.stanford import NERTagger
