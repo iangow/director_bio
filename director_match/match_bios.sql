@@ -1,4 +1,4 @@
-SET work_mem='5GB';
+﻿SET work_mem='5GB';
 
 WITH 
 
@@ -16,8 +16,8 @@ raw_data AS (
 unnested_data AS (
         SELECT director_id,
 		UNNEST(director_names) AS director_name,
-		UNNEST(director_bios) AS director_bio
-        UNNEST(companies) AS company,
+		UNNEST(director_bios) AS director_bio,
+        UNNEST(companies) AS company
 	FROM raw_data),
 		
 matched_director_bios AS (

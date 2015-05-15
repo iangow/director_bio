@@ -1,4 +1,4 @@
-﻿-- DROP FUNCTION findner (text)
+-- DROP FUNCTION findner (text)
 
 CREATE OR REPLACE FUNCTION findner (the_text text)
   RETURNS jsonb AS

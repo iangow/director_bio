@@ -1,4 +1,4 @@
-SET work_mem='3GB';
+-- SET work_mem='3GB';
 
 -- Get all restatements from Audit Analytics.
 WITH restatements AS (
@@ -38,7 +38,7 @@ boardex_directors_w_cos AS (
 -- Identify the directors that were on the board immediately before
 -- the restatement was filed.
 restatement_directors AS (
-    SELECT a.cik AS restate_cik, file_date AS restate_file_date, b.directorid
+    SELECT a.cik AS restate_cik, file_date AS res_file_date, b.directorid
     FROM restatements AS a
     LEFT JOIN boardex_directors_w_cos AS b
     ON a.cik=b.cik AND a.file_date >= b.date_start_role
@@ -50,12 +50,12 @@ restatement_directors AS (
 -- (ii) director was still there when restatement was filed
 -- (iii) director still there today (IS NULL)
 boardex_audit AS (
-    SELECT b.restate_cik, b.restate_file_date, a.*
+    SELECT b.restate_cik, b.res_file_date, a.*
     FROM restatement_directors AS b
     LEFT JOIN boardex_directors AS a
     ON a.directorid=b.directorid 
-        AND (restate_file_date <= date_start_role
-            OR restate_file_date <= date_end_role 
+        AND (res_file_date <= date_start_role
+            OR res_file_date <= date_end_role 
             OR date_end_role IS NULL)),
         
 all_filings AS (
@@ -65,7 +65,7 @@ all_filings AS (
     USING (boardid)
     LEFT JOIN 
         (SELECT * FROM filings.filings WHERE form_type='DEF 14A') AS c
-    ON b.cikcode=c.cik::integer AND c.date_filed >= a.restate_file_date 
+    ON b.cikcode=c.cik::integer AND c.date_filed >= a.res_file_date 
         AND (c.date_filed <= a.date_end_role OR a.date_end_role IS NULL)),
 
 first_filings AS (
@@ -77,4 +77,8 @@ SELECT a.*
 FROM all_filings AS a
 INNER JOIN first_filings
 USING (directorid, boardid, date_filed)
-ORDER BY restate_cik, restate_file_date, directorid, boardid, date_filed;
+-- ORDER BY restate_cik, res_file_date, directorid, boardid, date_filed;
+
+-- FETCH FORWARD 5 FROM pgstata_cursor;
+
+-- END TRANSACTION;
