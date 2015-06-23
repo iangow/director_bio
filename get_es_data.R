@@ -1,6 +1,5 @@
-
-
-
+# Code to get and analyze data from ElasticSearch store.
+# 
 get_es_data <- function() {
 # Function to get data from ElasticSearch
 # I'm not sure how robust this is. Probably best to only run this when the data are not changing.
@@ -35,6 +34,7 @@ get_es_data <- function() {
 }
 
 bio_data <- get_es_data()
+bio_data$updated <- as.POSIXct(strptime(bio_data$updated, "%Y-%m-%dT%H:%M:%OS"))
 
 # Look at statistics on filings so far
 table(bio_data$username)
@@ -42,3 +42,23 @@ library(dplyr)
 bio_data %>%
    group_by(username) %>%
    summarise(num_filings = n_distinct(uri))
+
+pdf(file="figures/productivity.pdf", paper = "USr")
+bio_data %>%
+    group_by(username, uri) %>%
+    summarise(start_time = min(updated), end_time = max(updated)) %>%
+    filter(username=="LaurelMcMechan@gmail.com") %>%
+    ggplot(aes(x=end_time)) + 
+        geom_histogram(binwidth = 60*60) + 
+        ggtitle("Filings per hour")
+
+bio_data %>%
+    group_by(username, uri) %>%
+    summarise(start_time = min(updated), end_time = max(updated), time_taken=end_time-start_time) %>%
+    filter(username=="LaurelMcMechan@gmail.com") %>%
+    ggplot(aes(x=time_taken)) +
+        geom_histogram( binwidth=20) +
+        ggtitle("Elapsed time for each filing")
+dev.off()
+    
+        
