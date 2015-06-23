@@ -1,4 +1,4 @@
--- DROP FUNCTION findner (text)
+﻿-- DROP FUNCTION findner (text)
 
 CREATE OR REPLACE FUNCTION findner (the_text text)
   RETURNS jsonb AS
@@ -12,7 +12,7 @@ $BODY$
         json = SD['json']
         NER_JAR = SD['NER_JAR']
         NER_CLASSIFIER = SD['NER_CLASSIFIER']
-        NERTagger = SD['NERTagger']
+        StanfordNERTagger = SD['StanfordNERTagger']
     else:
         import json
         
@@ -22,9 +22,9 @@ $BODY$
         NER_CLASSIFIER = '/opt/local/share/java/stanford-ner/classifiers/english.muc.7class.distsim.crf.ser.gz'
 
         # Create Stanford NER Tagger
-        from nltk.tag.stanford import NERTagger
-        SD['NERTagger'] = NERTagger
-        ner = NERTagger(NER_CLASSIFIER, NER_JAR)
+        from nltk.tag.stanford import StanfordNERTagger
+        SD['StanfordNERTagger'] = StanfordNERTagger
+        ner = StanfordNERTagger(NER_CLASSIFIER, NER_JAR)
         SD['ner'] = ner
         
         from nltk.tokenize import sent_tokenize, word_tokenize
