@@ -36,7 +36,7 @@ get_es_data <- function() {
 bio_data <- get_es_data()
 bio_data$updated <- as.POSIXct(strptime(bio_data$updated, "%Y-%m-%dT%H:%M:%OS"))
 
-# Look at statistics on filings so far
+# Look at statistics on filings ----
 table(bio_data$username)
 library(dplyr)
 bio_data %>%
@@ -44,18 +44,20 @@ bio_data %>%
    summarise(num_filings = n_distinct(uri))
 
 pdf(file="figures/productivity.pdf", paper = "USr")
+
+# Produce some plots ----
 bio_data %>%
     group_by(username, uri) %>%
-    summarise(start_time = min(updated), end_time = max(updated)) %>%
-    filter(username=="LaurelMcMechan@gmail.com") %>%
+    summarise(start_time = min(updated), end_time = max(updated), time_taken=end_time-start_time) %>%
+    filter(username=="LaurelMcMechan@gmail.com") -> 
+    plot_data
+
+plot_data %>% 
     ggplot(aes(x=end_time)) + 
         geom_histogram(binwidth = 60*60) + 
         ggtitle("Filings per hour")
 
-bio_data %>%
-    group_by(username, uri) %>%
-    summarise(start_time = min(updated), end_time = max(updated), time_taken=end_time-start_time) %>%
-    filter(username=="LaurelMcMechan@gmail.com") %>%
+plot_data %>%
     ggplot(aes(x=time_taken)) +
         geom_histogram( binwidth=20) +
         ggtitle("Elapsed time for each filing")
