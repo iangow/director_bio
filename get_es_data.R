@@ -14,7 +14,8 @@ get_es_data <- function() {
     # Go through the page
     while (TRUE) {
 
-        temp <- fromJSON(paste0("http://annotator-store.marder.io/search?limit=200&offset=", i*200))
+        temp <- fromJSON(paste0("http://annotator-store.marder.io/", 
+                                "search?limit=200&offset=", i*200))
 
         if (length(temp$rows)==0) {
             break
@@ -23,7 +24,9 @@ get_es_data <- function() {
 
             # Delete these rows, which are lists, to allow rbind to work.
             # Alternative would be to convert to text, then parse back in PostgreSQL.
-            temp_df$ranges <- NULL
+            # temp_df$ranges <- NULL
+            temp_df$user <- NULL
+            temp_df$consumer <- NULL
             temp_df$permissions <- NULL
             df <- rbind(df, temp_df)
         }
@@ -34,43 +37,63 @@ get_es_data <- function() {
 }
 
 bio_data <- get_es_data()
+library(parallel)
+
+bio_data$director <- bio_data$text
+bio_data$text <- NULL
+
+bio_data$ranges <- unlist(mclapply(bio_data$ranges, toJSON, mc.cores=12))
+
 bio_data$updated <- as.POSIXct(strptime(bio_data$updated, "%Y-%m-%dT%H:%M:%OS"))
-bio_data$username <- gsub("^(.*?)@(.*)$", "\\1",
-                          bio_data$username,
-                          perl=TRUE)
+bio_data$created <- as.POSIXct(strptime(bio_data$created, "%Y-%m-%dT%H:%M:%OS"))
+bio_data$category <- gsub("http://[^/]+//?(\\w+)/.*$", "\\1", bio_data$uri)
+bio_data <- subset(bio_data, category!="bio")
+bio_data$category[bio_data$category=="highlight"] <- "bio"
+bio_data$file_name <- 
+    gsub("http://[^/]+//?\\w+/(\\d+)/(\\d{10})(\\d{2})(\\d{6}).*$", 
+         "edgar/data/\\1/\\2-\\3-\\4.txt", bio_data$uri)
 
-# Look at statistics on filings ----
-table(bio_data$username)
-library(dplyr)
-bio_data %>%
-   group_by(username) %>%
-   summarise(num_filings = n_distinct(uri))
+# save(file="tagging/bio_data.Rdata", bio_data)
 
-# Produce some plots ----
-if (!dir.exists("figures")) dir.create("figures")
-pdf(file="figures/productivity.pdf", paper = "USr", width=9)
 
-library(ggplot2)
-library(scales) 
-bio_data %>%
-    group_by(username, uri) %>%
-    summarise(start_time = min(updated), end_time = max(updated), 
-              time_taken=end_time-start_time) -> 
-    plot_data
+# Push data to PostgreSQL ----
+library(RPostgreSQL)
+pg <- dbConnect(PostgreSQL())
 
-plot_data %>% 
-    ggplot(aes(x=end_time, fill=username)) + 
-        geom_histogram(binwidth=60*60) + 
-        scale_x_datetime(name="Time (hour)", 
-                         breaks=("2 hour"), minor_breaks=("1 hour"),
-                          labels=date_format("%H")) +
-        ggtitle("Filings per hour") 
-       
+rs <- dbWriteTable(pg, c("director_bio", "tagging_data"), bio_data,
+             overwrite=TRUE, row.names=FALSE)
 
-plot_data %>%
-    ggplot(aes(x=time_taken, fill=username)) +
-        geom_histogram( binwidth=20) +
-        ggtitle("Elapsed time for each filing")
-dev.off()
+rs <- dbGetQuery(pg, "
+    ALTER TABLE director_bio.tagging_data
+        ALTER COLUMN ranges TYPE jsonb USING ranges::jsonb->0;
+           
+    CREATE INDEX ON director_bio.tagging_data (file_name);
+
+    DROP TABLE IF EXISTS director_bio.bio_data;
+
+    CREATE TABLE director_bio.bio_data AS
+    WITH
+
+    directors AS (
+        SELECT director.equilar_id(director_id) AS equilar_id,
+            director.director_id(director_id) AS director_id,
+            fy_end, director
+        FROM director.director),
     
-        
+    directors_w_proxies AS (
+        SELECT *
+        FROM directors 
+        INNER JOIN director.equilar_proxies
+        USING (equilar_id, fy_end))
+
+    SELECT *
+    FROM director_bio.tagging_data AS a
+    INNER JOIN directors_w_proxies AS b
+    USING (file_name, director)
+    WHERE category='bio';
+           
+    ALTER TABLE director_bio.bio_data
+        ALTER COLUMN director_id TYPE equilar_director_id 
+            USING (equilar_id, director_id)::equilar_director_id;")
+
+rs <- dbDisconnect(pg)
