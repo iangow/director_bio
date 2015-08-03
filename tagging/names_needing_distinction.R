@@ -16,5 +16,12 @@ clean_bio <- function(bio) {
     new_text
 }
 
-names_need_distinct$clean_bio <- 
+names_need_distinct$bio <- 
     unlist(lapply(names_need_distinct$bio, clean_bio))
+
+# Upload data to Google Sheets.
+xlsx::write.xlsx(names_need_distinct, "data/names_need_distinct.xlsx", row.names = FALSE)
+names_need_distinct_gs <- gs_upload("data/names_need_distinct.xlsx")
+# gs_read_listfeed(names_need_distinct_gs)
+file.remove("data/names_need_distinct.xlsx")
+
