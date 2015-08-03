@@ -3,7 +3,7 @@ SET work_mem='1GB';
 WITH 
 
 director_data AS (
-    SELECT file_name, (director.equilar_id(director_id), 
+    SELECT DISTINCT file_name, (director.equilar_id(director_id), 
         director.director_id(director_id))::equilar_director_id AS director_id,
         age, chairman, committees, start_date, term_end_date
     FROM director.director AS a
