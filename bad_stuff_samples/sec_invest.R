@@ -15,10 +15,10 @@ library("RPostgreSQL")
 pg <- dbConnect(PostgreSQL())
 
 # Now get the data
-sql <- paste(readLines("sec_invest.sql"), collapse="\n")
+sql <- paste(readLines("bad_stuff_samples/sec_invest.sql"), collapse="\n")
 rs <- dbGetQuery(pg, sql)
 
-sql <- paste(readLines("sec_invest_dirs.sql"), collapse="\n")
+sql <- paste(readLines("bad_stuff_samples/sec_invest_dirs.sql"), collapse="\n")
 rs <- dbGetQuery(pg, sql)
 
 sec_invest_dirs <- dbGetQuery(pg, "SELECT * FROM director_bio.sec_invest_dirs")

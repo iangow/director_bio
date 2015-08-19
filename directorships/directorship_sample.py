@@ -17,5 +17,5 @@ df = read_sql(sql, con=conn)
 
 # print(df)
 
-df.to_pickle('directorships')
+df.to_pickle('directorships/directorships')
 

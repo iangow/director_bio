@@ -96,4 +96,18 @@ rs <- dbGetQuery(pg, "
         ALTER COLUMN director_id TYPE equilar_director_id 
             USING (equilar_id, director_id)::equilar_director_id;")
 
+sql <- "ALTER TABLE director_bio.tagging_data OWNER TO director_bio_team;"
+rs <- dbGetQuery(pg, sql)
+
+sql <- "CREATE INDEX ON director_bio.tagging_data (file_name)"
+rs <- dbGetQuery(pg, sql)
+
+sql <- "ALTER TABLE director_bio.bio_data OWNER TO director_bio_team;"
+rs <- dbGetQuery(pg, sql)
+
+sql <- "CREATE INDEX ON director_bio.bio_data (file_name)"
+rs <- dbGetQuery(pg, sql)
+dbGetQuery(pg, sql)
+
+
 rs <- dbDisconnect(pg)

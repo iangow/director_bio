@@ -38,7 +38,7 @@ def name_to_pattern(name):
 
 import pandas as pd
 
-df = pd.read_pickle('directorships')
+df = pd.read_pickle('directorships/directorships')
 
 df['new_bio'] = df['as_tagged'].map(clean_bio)
 
