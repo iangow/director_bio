@@ -62,6 +62,13 @@ sql <- "
     GROUP BY unnest(issue_category_alt) 
     ORDER BY count(*) DESC;"
 
+rs <- dbGetQuery(pg, sql)
+
+sql <- "ALTER TABLE director_bio.tagging_issues OWNER TO director_bio_team;"
+rs <- dbGetQuery(pg, sql)
+
+sql <- "CREATE INDEX ON director_bio.tagging_issues (file_name)"
+rs <- dbGetQuery(pg, sql)
 dbGetQuery(pg, sql)
 
 rs <- dbDisconnect(pg)
