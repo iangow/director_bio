@@ -1,3 +1,15 @@
+# Push data to PostgreSQL ----
+library(dplyr)
+pg <- src_postgres()
+
+sql <- "SELECT DISTINCT username, uri, updated -- , category
+        FROM director_bio.tagging_data
+        WHERE category='bio' AND updated >= '2015-08-17'"
+
+bio_data <- tbl(pg, sql(sql))
+    
+bio_data <- as.data.frame(bio_data) 
+head(bio_data)
 
 # Look at statistics on filings ----
 bio_data$username <- gsub("^(.*?)@(.*)$", "\\1",
