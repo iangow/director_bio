@@ -37,26 +37,6 @@ get_file_list <- function(file_path) {
 # Look at the first filing (change 1 to 2, etc., to get second, etc.)
 # browseFiling(1)
 
-# Sys.setenv(EDGAR_DIR="/Volumes/2TB/data")
-Sys.setlocale(category = "LC_ALL", locale = "UTF-8")
-
-# Note that you need to set the environment variable EDGAR_DIR to 
-# be the directory on your system before calling the function.
-# In R, this can be done like this:
-# > Sys.setenv(EDGAR_DIR="/Volumes/2TB/data")
-library(devtools)
-source_url(paste0("https://raw.githubusercontent.com/iangow/acct_data/",
-                  "master/filings/download_filing_functions.R"))
-
-load_regexes <- function(path) {
-    text <- readLines(path)
-    
-    # Eliminate comments and empty lines
-    text <- text[!grepl("^(\\s*#|\\s*$)", text)]
-    
-    return(as.list(text))
-}
-
 check_regexes <- function(file_name, regexes) {
     path <- file.path(Sys.getenv("EDGAR_DIR"), file_name)
     
@@ -77,7 +57,7 @@ check_regexes <- function(file_name, regexes) {
     return(any(mapply(apply_regex, files, regex, ignore.case=TRUE)))
 }
 
-check_staggered_board <- function(file_name) {
-    regexes <- load_regexes("staggered_boards/regexes.txt")
-    check_regexes(file_name, regexes) 
-}
+library(devtools)
+source_url(paste0("https://raw.githubusercontent.com/iangow/acct_data/",
+                  "master/filings/download_filing_functions.R"))
+
