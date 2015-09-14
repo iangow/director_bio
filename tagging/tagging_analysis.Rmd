@@ -1,0 +1,88 @@
+---
+title: "Tagging status update"
+author: "Ian Gow"
+date: "2015-09-11"
+output: pdf_document
+---
+```{r tidy_function, include=FALSE} 
+library(dplyr)
+tidy_count <- function(df) {
+    df %>% 
+        summarize(count=n()) %>%
+        collect() %>%
+        as.integer() %>%
+        formatC(big.mark = ",")
+}
+```
+
+
+```{r get_data, include=FALSE, cache=FALSE}
+
+pg <- src_postgres()
+
+equilar_fyrs <- tbl(pg, sql("
+    SELECT DISTINCT director.equilar_id(company_id), fy_end
+    FROM director.co_fin"))
+
+directors <- tbl(pg, sql("
+    SELECT DISTINCT director.equilar_id(director_id),
+        director.director_id(director_id), director, fy_end
+    FROM director.director"))
+
+bio_data <- tbl(pg, sql("
+    SELECT equilar_id, (director_id).director_id, fy_end, director, bio
+    FROM director_bio.bio_data"))
+
+proxy_filings <- tbl(pg, sql("
+    SELECT equilar_id, fy_end,
+        bool_or(cik IS NOT NULL) AS has_ciks,
+        bool_or(file_name IS NOT NULL) AS has_proxies
+    FROM director.equilar_proxies
+    GROUP BY equilar_id, fy_end"))
+
+tagged_firm_years <-
+    bio_data %>%
+    select(equilar_id, fy_end) %>%
+    distinct()
+
+tagging_issues <- tbl(pg, sql("
+    SELECT DISTINCT equilar_id, fy_end, TRUE AS tagging_issue
+    FROM director_bio.tagging_issues
+    INNER JOIN director.equilar_proxies
+    USING (file_name)
+    WHERE file_name IS NOT NULL"))
+
+untagged_firm_years <-
+    equilar_fyrs %>%
+    anti_join(tagged_firm_years) %>%
+    left_join(proxy_filings) %>%
+    left_join(tagging_issues) %>%
+    mutate(tagging_issues=!is.na(tagging_issue),
+           no_cik=is.na(has_ciks) | ! has_ciks,
+           no_proxy= has_ciks & (is.na(has_proxies) | !has_proxies))
+```
+
+There are `r tidy_count(equilar_fyrs)` firm-years on Equilar. 
+Of these, `r tidy_count(tagged_firm_years)` have at least one tagged bio, and
+`r tidy_count(untagged_firm_years)` have none. 
+Of the untagged firm-years, 
+`r tidy_count(untagged_firm_years %>% collapse() %>% filter(no_cik))` have no matching
+CIK, `r tidy_count(untagged_firm_years %>% collapse() %>% filter(no_proxy))` have CIKs, but no proxy filings, and a further
+`r tidy_count(untagged_firm_years %>% collapse() %>% filter(tagging_issues))` have tagging issues.
+This leaves a further, `r tidy_count(untagged_firm_years %>% collapse() %>% filter(!tagging_issues & !no_proxy & ! no_cik))` that have no obvious issues, but are untagged.
+
+
+```{r tagged_bios, include=FALSE, cache=FALSE}
+bios_tagged_firms <- tagged_firm_years %>%
+    inner_join(directors) %>%
+    left_join(bio_data) %>%
+    left_join(tagging_issues) %>%
+    mutate(has_bio = !is.na(bio),
+           tagging_issues = !is.na(tagging_issue)) 
+```
+
+For the tagged firm-years, there are `r tidy_count(bios_tagged_firms)` to be tagged.\footnote{I ignore the small number of cases with "directors needing disambiguation".}
+Of these, we have `r tidy_count(bios_tagged_firms %>% collapse() %>% filter(has_bio))` bios tagged, and
+`r tidy_count(bios_tagged_firms %>% filter(!has_bio))` untagged.
+For the untagged bios, we have tagging issues identified for filings associated with 
+`r tidy_count(bios_tagged_firms %>% filter(!has_bio & tagging_issues))` of them, and no tagging issues flagged for the remaining `r tidy_count(bios_tagged_firms %>% filter(!has_bio & !tagging_issues))` of them.
