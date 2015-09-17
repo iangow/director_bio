@@ -1,0 +1,30 @@
+---
+title: 'Tagging issues: Triage'
+author: "Ian Gow"
+date: "8/23/2015"
+output: pdf_document
+---
+
+
+There are various categories of issues. 
+
+Q: Are there cases where we already have tagged bios, but no assigned RA in the "remaining filings" sheet?
+```{r, include=FALSE}
+
+library(RPostgreSQL)
+
+pg <- dbConnect(PostgreSQL())
+
+missing_bios <- dbGetQuery(pg,"
+    SELECT 
+    FROM director_bio.remaining_filings
+    INNER JOIN director_bio.bio_data
+    USING (file_name)
+    WHERE assigned_ra IS NULL")
+
+rs <- dbDisconnect(pg)
+
+
+```
+
+A: There are `r dim(missing_bios)[1]` such cases.
