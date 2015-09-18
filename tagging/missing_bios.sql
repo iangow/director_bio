@@ -1,12 +1,12 @@
-WITH  
+WITH
 tagging_issues AS (
     SELECT *
     FROM director_bio.tagging_issues
     WHERE 'missing_bios' = ANY(issue_category_alt)),
-    
+
 equilar_directors AS (
-    SELECT DISTINCT director.equilar_id(director_id), 
-        director.director_id(director_id), 
+    SELECT DISTINCT director.equilar_id(director_id),
+        director.director_id(director_id),
         director, fy_end, term_end_date, start_date
     FROM director.director),
 

@@ -5,6 +5,7 @@ date: "2015-09-11"
 output: pdf_document
 ---
 ```{r tidy_function, include=FALSE} 
+Sys.setenv(PGHOST="iangow.me", PGDATABASE="crsp")
 library(dplyr)
 tidy_count <- function(df) {
     df %>% 
@@ -77,6 +78,7 @@ bios_tagged_firms <- tagged_firm_years %>%
     inner_join(directors) %>%
     left_join(bio_data) %>%
     left_join(tagging_issues) %>%
+    collect() %>%
     mutate(has_bio = !is.na(bio),
            tagging_issues = !is.na(tagging_issue)) 
 ```

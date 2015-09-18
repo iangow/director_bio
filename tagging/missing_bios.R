@@ -18,9 +18,14 @@ rs <- dbDisconnect(pg)
 table(is.na(missing_bios$term_end_date))
 closer_look_1 <- subset(missing_bios, is.na(term_end_date))
 View(closer_look_1)
+library(xlsx)
+write.xlsx(closer_look_1, "missing_bios_1.xlsx", row.names=FALSE)
+
 
 # There are other cases, where the term end date is more than 60 days after
 # the filing was made. These also probably warrant a little digging.
 table(missing_bios$term_end_date >missing_bios$date_filed + 60)
 closer_look_2 <- subset(missing_bios, term_end_date > date_filed + 60)
 View(closer_look_2)
+library(xlsx)
+write.xlsx(closer_look_2, "missing_bios_2.xlsx", row.names=FALSE)
