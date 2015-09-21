@@ -3,8 +3,8 @@ import pandas as pd
 from pandas.io.sql import read_sql
 
 sql = """
-    SELECT file_name, director, director_id::text, quote AS bio, 
-        as_tagged, other_director_id, other_directorship, 
+    SELECT file_name, director, director_id::text, bio,
+        as_tagged, other_director_id, other_directorship,
         directorship_present, b.uri
     FROM director_bio.bio_data AS a
     INNER JOIN director_bio.tagged_directorships AS b

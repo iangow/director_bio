@@ -15,25 +15,26 @@ def name_to_pattern(name):
     # Strip leading and trailing spaces
     pattern = re.sub(r'^\s+', "", name)
     pattern = re.sub(r'\s+$', "", pattern)
-    
+
     # Add capturing parentheses
     pattern = '(' + pattern + ')'
     # pattern = re.sub("'", "'?", pattern)
-    
+
     # Make commas optional
     pattern = re.sub(r',', ",?", pattern)
-    
+
     # pattern = re.sub(",\s+", ",?\s*", pattern)
-    pattern = re.sub(r'\bCO(MPANY)?\b', "Co(?:mpany)?", pattern)
+    pattern = re.sub(r'\s+CO(MPANY)?\b', "(?: Co(?:mpany))?", pattern)
     pattern = re.sub(r'\s+&\s+', "(?: & | and )", pattern)
     pattern = re.sub(r'\s+[\\/]([A-Z]+|DE|IN|OHIO)[\\/]', "", pattern)
     pattern = re.sub(r'\bU\.?S\.?\b', 'U\.?S\.?', pattern)
-    
-    pattern = re.sub(r'\s+INC\b\.?', "(?: Inc(?:\.|orporated)?)?", pattern)
-        
-    pattern = re.sub(r'\s+CORP\b\.?', "(?: Corp(?:oration)?)?", pattern)
+
+    pattern = re.sub(r'\s+INC\.?\b', "(?: Inc(?:\.|orporated)?)?", pattern)
+    pattern = re.sub(r'\s+CORP\b\.?', "(?: Co(?:oration)?)?", pattern)
     pattern = re.sub(r'\s+HOLDINGS\b', "(?: Holdings)?", pattern)
 
+    # Allow spaces to be matched by hyphens
+    pattern = re.sub(r'\s', "[-\s]", pattern)
     return pattern
 
 import pandas as pd
@@ -48,7 +49,7 @@ df['pattern'] = df['other_directorship'].map(name_to_pattern)
 
 def apply_regex(bio, pattern):
     import re
-    
+
     cleaned_bio = clean_bio(bio)
     return re.findall(pattern, cleaned_bio, flags=re.I)
 
@@ -57,5 +58,5 @@ df['result'] =  df.apply(lambda row: apply_regex(row['as_tagged'], row['pattern'
 
 df['non_match'] = df['result'].map(lambda x: not x)
 print(df.ix[df['non_match'],
-            ['other_directorship', 'as_tagged', 'new_bio', 
+            ['other_directorship', 'as_tagged', 'new_bio',
                 'pattern', 'result']])
