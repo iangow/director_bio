@@ -14,13 +14,13 @@ matched_directors AS (
     FROM directors
     INNER JOIN matches
     USING (director_id)),
-    
+
 companies AS (
     SELECT director_id, company, fy_end
     FROM directors),
-    
+
 director_companies AS (
-    SELECT DISTINCT a.director_id, a.fy_end, 
+    SELECT DISTINCT a.director_id, a.fy_end,
         array_agg(DISTINCT c.company) AS companies
     FROM matched_directors AS a
     INNER JOIN companies AS c
@@ -29,13 +29,12 @@ director_companies AS (
 
 SELECT c.director, c.company, c.fy_end, (a.director_id).*,
     a.companies,
-    'http://www.sec.gov/Archives/' || regexp_replace(file_name, 
-                   E'(\\d{10})-(\\d{2})-(\\d{6})\\.txt', 
+    'http://www.sec.gov/Archives/' || regexp_replace(file_name,
+                   E'(\\d{10})-(\\d{2})-(\\d{6})\\.txt',
                    E'\\1\\2\\3') AS url
 FROM director_companies AS a
 INNER JOIN directors AS c
 USING (director_id, fy_end)
 INNER JOIN director.equilar_proxies AS b
 ON (a.director_id).equilar_id=b.equilar_id AND a.fy_end=b.fy_end
-ORDER BY equilar_id, director_id, fy_end
-
+ORDER BY equilar_id, director_id, fy_end;
