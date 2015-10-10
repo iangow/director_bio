@@ -1,3 +1,4 @@
+#/usr/bin/env python3
 def clean_bio(bio_text):
     import re
 
@@ -57,6 +58,7 @@ df['result'] =  df.apply(lambda row: apply_regex(row['as_tagged'], row['pattern'
                             axis=1)
 
 df['non_match'] = df['result'].map(lambda x: not x)
+pd.set_option('display.width', 1000)
 print(df.ix[df['non_match'],
             ['other_directorship', 'as_tagged', 'new_bio',
                 'pattern', 'result']])
