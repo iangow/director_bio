@@ -4,23 +4,51 @@ DROP TABLE IF EXISTS director_bio.other_directorships;
 
 CREATE TABLE director_bio.other_directorships AS
 WITH company_names AS (
-    SELECT DISTINCT director.equilar_id(company_id), company
+    SELECT DISTINCT director.equilar_id(company_id) AS equilar_id,
+        fy_end, company, cusip
     FROM director.co_fin),
 
 matched_ids AS (
     SELECT director_id, UNNEST(matched_ids) AS other_director_id,
-	(UNNEST(matched_ids)).equilar_id
+	    (UNNEST(matched_ids)).equilar_id
     FROM director.director_matches),
 
+term_dates AS (
+    SELECT (director.equilar_id(director_id),
+            director.director_id(director_id))::equilar_director_id AS director_id,
+        min(start_date) AS start_date,
+        max(term_end_date) AS end_date
+    FROM director.director
+    GROUP BY 1),
+
 other_directorships AS (
-    SELECT DISTINCT director_id,
+    SELECT DISTINCT director_id, fy_end,
+        (director_id).equilar_id AS equilar_id,
         (other_director_id).equilar_id AS other_equilar_id,
         other_director_id,
-        company AS other_directorship
+        company AS other_directorship,
+        cusip AS other_cusip
     FROM matched_ids
     INNER JOIN company_names
     USING (equilar_id)
     WHERE director_id != other_director_id),
+
+-- Add CUSIP for main firm
+other_directorships_w_cusip AS (
+    SELECT DISTINCT a.*, b.cusip
+    FROM other_directorships AS a
+    INNER JOIN company_names AS b
+    USING (equilar_id)),
+
+other_directorships_dates AS (
+    SELECT a.*, b.start_date, b.end_date,
+        c.start_date AS other_start_date,
+        c.end_date AS other_end_date
+    FROM other_directorships_w_cusip AS a
+    INNER JOIN term_dates AS b
+    USING (director_id)
+    INNER JOIN term_dates AS c
+    ON c.director_id = a.other_director_id),
 
 tagged_directorships AS (
     SELECT b.equilar_id AS other_equilar_id,
@@ -44,9 +72,10 @@ original_names AS (
     GROUP BY 1)
 
 SELECT *
-FROM other_directorships AS b
+FROM other_directorships_dates AS b
 INNER JOIN original_names
 USING (other_equilar_id);
 
+ALTER TABLE director_bio.other_directorships OWNER TO director_bio_team;
 CREATE INDEX ON director_bio.other_directorships (director_id);
 CREATE INDEX ON director_bio.other_directorships (director_id, other_directorship);
