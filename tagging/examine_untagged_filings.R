@@ -28,6 +28,44 @@ equilar_proxies <- tbl(pg, sql("
     FROM director.equilar_proxies
     WHERE file_name IS NOT NULL"))
 
+hal_equilar_proxies <- tbl(pg, sql("
+    SELECT *
+    FROM hal.equilar_proxies
+    WHERE file_name IS NOT NULL"))
+
+hal_filings <- tbl(pg, sql("
+    SELECT folder, text IS NOT NULL AS downloaded
+    FROM hal.mirror_filing"))
+
+hal_filings %>%
+    group_by(downloaded) %>%
+    summarize(n()) %>%
+    collect()
+
+hal_highlights <- tbl(pg, sql("
+    SELECT regexp_replace(uri, 'http://hal.marder.io/highlight/', '') AS folder,
+        string_agg(quote, ' ') AS quote
+    FROM hal.mirror_highlight
+    GROUP BY 1"))
+
+hal_filings %>%
+    left_join(hal_highlights) %>%
+    mutate(highlighted = !is.na(quote)) %>%
+    select(-quote) %>%
+    group_by(downloaded, highlighted) %>%
+    summarize(n()) %>%
+    collect()
+
+new_matches <-
+    equilar_proxies %>%                   # Mapped to proxy filings
+    anti_join(hal_equilar_proxies) %>%
+    collect()
+
+un_matches <-
+    hal_equilar_proxies %>%                   # Mapped to proxy filings
+    anti_join(equilar_proxies) %>%
+    collect()
+
 # The <- puts the results of the code into the data frame untagged_firm_years
 # The %>% is the dplyr "pipe" operator.
 untagged_firm_years <-
