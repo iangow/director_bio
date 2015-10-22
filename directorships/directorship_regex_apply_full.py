@@ -1,18 +1,38 @@
 from directorship_regex import names_in_bio
-
+import sqlalchemy as sa
 import pandas as pd
 
-df = pd.read_pickle('directorships/directorships_full')
+import psycopg2 as pg
+import pandas as pd
+from pandas.io.sql import read_sql
 
-# df['pattern'] = df['other_directorship_names'].map(names_to_pattern)
-df['result'] =  df.apply(lambda row: names_in_bio(row['bio'], row['other_directorship_names']),
+from sqlalchemy import create_engine
+engine = create_engine('postgresql://iangow.me/crsp')
+
+sql = """
+    SELECT a.file_name, c.date_filed, director, a.equilar_id, a.fy_end,
+        director_id, cusip,
+        bio,
+        start_date, end_date,
+        other_director_id, other_directorship, other_cusip,
+        other_start_date,
+        other_end_date,
+        other_directorship_names
+    FROM director_bio.bio_data AS a
+    INNER JOIN director_bio.other_directorships
+    USING (director_id)
+    INNER JOIN filings.filings AS c
+    USING (file_name)"""
+
+df = pd.read_sql(sa.text(sql), engine)
+
+df['result'] =  df.apply(lambda row: names_in_bio(row['bio'],
+                                                  row['other_directorship_names']),
                             axis=1)
 df['non_match'] = df['result'].map(lambda x: not x)
 
-print(df.ix[df['non_match'],
-            ['other_directorship_names', 'non_match',
-                'pattern', 'result']])
+# Push data to PostgreSQL database
+df.to_sql('directorship_results', engine, schema="director_bio",
+         if_exists="replace", index=False)
 
-from sqlalchemy import create_engine
-engine = create_engine('postgresql://iangow.me:5432/crsp')
-df.to_sql('directorship_results', engine, schema="director_bio"
+engine.execute("ALTER TABLE director_bio.directorship_results OWNER TO director_bio_team")
