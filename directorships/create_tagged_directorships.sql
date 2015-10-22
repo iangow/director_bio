@@ -10,8 +10,9 @@ CREATE TABLE director_bio.tagged_directorships AS
 WITH
 
 tagged_data AS (
-    SELECT file_name, -- get director_id from uri,
+    SELECT file_name, fy_end,
         uri,
+        -- get director_id from uri,
         regexp_replace(uri,
                         '.*ships/\d+/\d+/(.*)', '\1') AS director_id,
         director AS other_directorship,
@@ -22,6 +23,8 @@ tagged_data AS (
         regexp_replace(regexp_replace(quote, '\n', ' '), '\s+', ' ')
             AS as_tagged
     FROM director_bio.raw_tagging_data
+    INNER JOIN director.equilar_proxies
+    USING (file_name)
     WHERE category='directorships' AND director != 'Company Not Found'
         AND uri ~ '.*ships/\d+/\d+/(.*)'),
 
@@ -29,6 +32,7 @@ tagged_data_ids AS (
     SELECT (director.equilar_id(director_id),
         director.director_id(director_id))::equilar_director_id AS director_id,
         director.equilar_id(director_id) AS equilar_id,
+        fy_end,
         file_name, other_directorship, directorship_present,
         as_tagged, uri
     FROM tagged_data)
@@ -36,5 +40,6 @@ tagged_data_ids AS (
 SELECT *
 FROM tagged_data_ids;
 
+ALTER TABLE director_bio.other_directorships OWNER TO director_bio_team;
 CREATE INDEX ON director_bio.tagged_directorships (file_name);
 CREATE INDEX ON director_bio.tagged_directorships (director_id);
