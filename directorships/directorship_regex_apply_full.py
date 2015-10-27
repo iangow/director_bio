@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from directorship_regex import names_in_bio
 import sqlalchemy as sa
 import pandas as pd
@@ -10,19 +11,12 @@ from sqlalchemy import create_engine
 engine = create_engine('postgresql://iangow.me/crsp')
 
 sql = """
-    SELECT a.file_name, c.date_filed, director, a.equilar_id, a.fy_end,
-        director_id, cusip,
-        bio,
-        start_date, end_date,
-        other_director_id, other_directorship, other_cusip,
-        other_start_date,
-        other_end_date,
+    SELECT a.file_name,
+        director_id, other_director_id, bio,
         other_directorship_names
     FROM director_bio.bio_data AS a
     INNER JOIN director_bio.other_directorships
-    USING (director_id)
-    INNER JOIN filings.filings AS c
-    USING (file_name)"""
+    USING (director_id, fy_end)"""
 
 df = pd.read_sql(sa.text(sql), engine)
 
@@ -31,8 +25,21 @@ df['result'] =  df.apply(lambda row: names_in_bio(row['bio'],
                             axis=1)
 df['non_match'] = df['result'].map(lambda x: not x)
 
+# Delete columns not needed any more
+del df['bio']
+del df['other_directorship_names']
+
 # Push data to PostgreSQL database
-df.to_sql('directorship_results', engine, schema="director_bio",
+df.to_sql('regex_results', engine, schema="director_bio",
          if_exists="replace", index=False)
 
-engine.execute("ALTER TABLE director_bio.directorship_results OWNER TO director_bio_team")
+engine.execute("ALTER TABLE director_bio.regex_results OWNER TO director_bio_team")
+
+engine.execute("""
+    ALTER TABLE director_bio.regex_results
+        ALTER COLUMN director_id TYPE equilar_director_id
+        USING director_id::equilar_director_id;
+
+    ALTER TABLE director_bio.regex_results
+        ALTER COLUMN other_director_id TYPE equilar_director_id
+        USING other_director_id::equilar_director_id;""")

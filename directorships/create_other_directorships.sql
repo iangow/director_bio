@@ -3,9 +3,11 @@ SET work_mem='5GB';
 DROP TABLE IF EXISTS director_bio.other_directorships;
 
 CREATE TABLE director_bio.other_directorships AS
-WITH company_names AS (
+WITH
+
+company_names AS (
     SELECT DISTINCT director.equilar_id(company_id) AS equilar_id,
-        fy_end, company, cusip
+        fy_end, company, trim(cusip) AS cusip
     FROM director.co_fin),
 
 matched_ids AS (
@@ -69,12 +71,30 @@ original_names AS (
     SELECT other_equilar_id,
         array_agg(DISTINCT other_directorship_name) AS other_directorship_names
     FROM original_names_unnest
+    GROUP BY 1),
+
+stocknames AS (
+    SELECT DISTINCT permno AS other_permno, ncusip AS other_cusip
+    FROM crsp.stocknames),
+
+stockdates AS (
+    SELECT permno AS other_permno,
+        min(namedt) AS other_first_date,
+        max(nameenddt) AS other_last_date
+    FROM crsp.stocknames
     GROUP BY 1)
 
-SELECT *
+SELECT *,
+    (other_start_date, COALESCE(other_end_date, other_last_date))
+        OVERLAPS
+    (other_first_date, other_last_date) AS other_public_co
 FROM other_directorships_dates AS b
 INNER JOIN original_names
-USING (other_equilar_id);
+USING (other_equilar_id)
+LEFT JOIN stocknames
+USING (other_cusip)
+LEFT JOIN stockdates
+USING (other_permno);
 
 ALTER TABLE director_bio.other_directorships OWNER TO director_bio_team;
 CREATE INDEX ON director_bio.other_directorships (director_id);
