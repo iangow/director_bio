@@ -11,8 +11,9 @@ company_names AS (
     FROM director.co_fin),
 
 matched_ids AS (
-    SELECT director_id, UNNEST(matched_ids) AS other_director_id,
-	    (UNNEST(matched_ids)).equilar_id
+    SELECT director_id, (director_id).equilar_id,
+        UNNEST(matched_ids) AS other_director_id,
+	    (UNNEST(matched_ids)).equilar_id AS other_equilar_id
     FROM director.director_matches),
 
 term_dates AS (
