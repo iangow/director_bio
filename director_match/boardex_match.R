@@ -42,7 +42,8 @@ director_ticker <-
     co_fin %>%
     anti_join(director_cusip) %>%
     left_join(crsp_tickers) %>%
-    filter((fy_end >= start_date & fy_end <= end_date) | is.na(start_date)) %>%
+    filter((fy_end >= start_date & fy_end <= end_date)
+           | is.na(start_date)) %>%
     select(equilar_id, cusip, permco) %>%
     distinct() %>%
     mutate(match_type=sql("'ticker'::text"))
@@ -59,8 +60,9 @@ table(director_permco$match_type)
 
 # BoardEx companies
 co_profile <- tbl(pg, sql("
-    SELECT DISTINCT boardid, ticker,
-        regexp_replace(isin, '^(?:CA|US)([A-Z0-9]{8}).*$', '\\1') AS cusip
+    SELECT DISTINCT boardid, ticker, board_name,
+        regexp_replace(isin,
+                        '^(?:CA|US)([A-Z0-9]{8}).*$', '\\1') AS cusip
     FROM boardex.company_profile_stocks
     WHERE isin ~ '^(CA|US)'"))
 
@@ -75,7 +77,6 @@ co_profile_ticker <-
     co_profile %>%
     anti_join(co_profile_cusip) %>%
     left_join(crsp_tickers) %>%
-    # filter(fy_end >= start_date, fy_end <= end_date) %>%
     select(boardid, cusip, permco) %>%
     distinct() %>%
     mutate(match_type=sql("'ticker'::text"))
@@ -123,3 +124,22 @@ boardex_merge %>%
     distinct() %>%
     group_by(match_type) %>%
     summarize(count=n())
+
+# Potentially bad matches
+pot_bad_matches <-
+    co_profile_ticker %>%
+    collect() %>%
+    filter(match_type=="ticker") %>%
+    select(boardid) %>%
+    inner_join(boardex_merge %>%
+                   select(boardid, equilar_id)) %>%
+    distinct() %>%
+    inner_join(co_fin %>%
+                   select(company, equilar_id) %>%
+                   distinct() %>%
+                   collect()) %>%
+    inner_join(co_profile %>%
+                   select(board_name, boardid) %>%
+                   distinct() %>%
+                   collect()) %>%
+    as.data.frame()
