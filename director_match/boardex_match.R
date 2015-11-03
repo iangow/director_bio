@@ -143,3 +143,11 @@ pot_bad_matches <-
                    distinct() %>%
                    collect()) %>%
     as.data.frame()
+
+# Write data to PostgreSQL ----
+pg <- dbConnect(PostgreSQL())
+rs <- dbWriteTable(pg, c("director", "boardex_merge"), as.data.frame(boardex_merge),
+                   overwrite=TRUE, row.names=FALSE)
+rs <- dbGetQuery(pg, "CREATE INDEX ON director.boardex_merge (equilar_id)")
+rs <- dbGetQuery(pg, "CREATE INDEX ON director.boardex_merge (boardid)")
+rs <- dbDisconnect(pg)
