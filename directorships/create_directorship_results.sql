@@ -1,4 +1,4 @@
-SET work_mem='3GB';
+SET work_mem='5GB';
 
 DROP TABLE IF EXISTS director_bio.directorship_results;
 

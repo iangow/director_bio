@@ -5,15 +5,21 @@ DROP TABLE IF EXISTS director_bio.other_directorships;
 CREATE TABLE director_bio.other_directorships AS
 WITH
 
-company_names AS (
-    SELECT DISTINCT director.equilar_id(company_id) AS equilar_id,
-        fy_end, company, trim(cusip) AS cusip
-    FROM director.co_fin),
+director AS (
+    SELECT DISTINCT (director.equilar_id(director_id),
+            director.director_id(director_id))::equilar_director_id AS director_id,
+        director.equilar_id(director_id), fy_end
+    FROM director.director),
+
+db_merge AS (
+    SELECT equilar_id, fy_end, cusip, companies, ciks, gvkeys
+    FROM director.db_merge),
 
 matched_ids AS (
     SELECT director_id, (director_id).equilar_id,
         UNNEST(matched_ids) AS other_director_id,
-	    (UNNEST(matched_ids)).equilar_id AS other_equilar_id
+	    (UNNEST(matched_ids)).equilar_id AS other_equilar_id,
+	    directorid
     FROM director.director_matches),
 
 term_dates AS (
@@ -25,39 +31,53 @@ term_dates AS (
     GROUP BY 1),
 
 other_directorships AS (
-    SELECT DISTINCT director_id, fy_end,
-        (director_id).equilar_id AS equilar_id,
-        (other_director_id).equilar_id AS other_equilar_id,
-        other_director_id,
-        company AS other_directorship,
-        cusip AS other_cusip
-    FROM matched_ids
-    INNER JOIN company_names
-    USING (equilar_id)
+    SELECT DISTINCT
+        a.director_id, a.fy_end, a.equilar_id,
+
+        -- Identifiers for "this" company
+        b.companies,
+        b.cusip, b.gvkeys, b.ciks,
+
+        -- Matched director-level data
+        c.directorid,
+        (c.other_director_id).equilar_id AS other_equilar_id,
+        c.other_director_id,
+
+        -- Identifiers for the "other" company
+        d.companies AS other_directorships,
+        d.cusip AS other_cusip,
+        d.ciks AS other_ciks,
+        d.gvkeys AS other_gvkeys
+    FROM director AS a
+    INNER JOIN db_merge AS b
+    USING (equilar_id, fy_end)
+    INNER JOIN matched_ids AS c
+    USING (director_id)
+    LEFT JOIN db_merge AS d
+    ON (other_director_id).equilar_id=d.equilar_id
     WHERE director_id != other_director_id),
 
--- Add CUSIP for main firm
-other_directorships_w_cusip AS (
-    SELECT DISTINCT a.*, b.cusip
-    FROM other_directorships AS a
-    INNER JOIN company_names AS b
-    USING (equilar_id)),
-
 other_directorships_dates AS (
-    SELECT a.*, b.start_date, b.end_date,
+    SELECT a.*,
+        b.start_date, b.end_date,
         c.start_date AS other_start_date,
         c.end_date AS other_end_date
-    FROM other_directorships_w_cusip AS a
+    FROM other_directorships AS a
     INNER JOIN term_dates AS b
     USING (director_id)
-    INNER JOIN term_dates AS c
+    LEFT JOIN term_dates AS c
     ON c.director_id = a.other_director_id),
+
+companies AS (
+    SELECT equilar_id, upper(UNNEST(companies)) AS company
+    FROM db_merge),
 
 tagged_directorships AS (
     SELECT b.equilar_id AS other_equilar_id,
+        -- Convert name to upper case, convert multiple spaces to single spaces
         upper(regexp_replace(as_tagged, '\s{2,}', ' ')) AS other_directorship_name
     FROM director_bio.tagged_directorships AS a
-    INNER JOIN company_names AS b
+    INNER JOIN companies AS b
     ON a.other_directorship=b.company),
 
 original_names_unnest AS (
@@ -83,9 +103,14 @@ stockdates AS (
         min(namedt) AS other_first_date,
         max(nameenddt) AS other_last_date
     FROM crsp.stocknames
-    GROUP BY 1)
+    GROUP BY 1),
 
-SELECT *,
+dupes AS (
+    SELECT director_id, count(*) > 1 AS directorid_issue
+    FROM director.director_matches
+    GROUP BY director_id)
+
+SELECT DISTINCT *,
     (other_start_date, COALESCE(other_end_date, other_last_date))
         OVERLAPS
     (other_first_date, other_last_date) AS other_public_co
@@ -95,8 +120,12 @@ USING (other_equilar_id)
 LEFT JOIN stocknames
 USING (other_cusip)
 LEFT JOIN stockdates
-USING (other_permno);
+USING (other_permno)
+INNER JOIN dupes
+USING (director_id);
 
 ALTER TABLE director_bio.other_directorships OWNER TO director_bio_team;
+
+SET maintenance_work_mem='1GB';
 CREATE INDEX ON director_bio.other_directorships (director_id);
 CREATE INDEX ON director_bio.other_directorships (director_id, other_directorship);
