@@ -12,7 +12,7 @@ director AS (
     FROM director.director),
 
 db_merge AS (
-    SELECT equilar_id, fy_end, cusip, companies, ciks, gvkeys
+    SELECT equilar_id, fy_end, cusips, companies, ciks, gvkeys
     FROM director.db_merge),
 
 matched_ids AS (
@@ -36,7 +36,7 @@ other_directorships AS (
 
         -- Identifiers for "this" company
         b.companies,
-        b.cusip, b.gvkeys, b.ciks,
+        b.cusips, b.gvkeys, b.ciks,
 
         -- Matched director-level data
         c.directorid,
@@ -45,7 +45,7 @@ other_directorships AS (
 
         -- Identifiers for the "other" company
         d.companies AS other_directorships,
-        d.cusip AS other_cusip,
+        d.cusips AS other_cusips,
         d.ciks AS other_ciks,
         d.gvkeys AS other_gvkeys
     FROM director AS a
@@ -94,15 +94,16 @@ original_names AS (
     FROM original_names_unnest
     GROUP BY 1),
 
-stocknames AS (
-    SELECT DISTINCT permno AS other_permno, ncusip AS other_cusip
-    FROM crsp.stocknames),
-
 stockdates AS (
-    SELECT permno AS other_permno,
+    SELECT other_equilar_id,
+        array_agg(DISTINCT permno) AS other_permnos,
         min(namedt) AS other_first_date,
         max(nameenddt) AS other_last_date
-    FROM crsp.stocknames
+    FROM crsp.stocknames AS a
+    INNER JOIN (
+        SELECT DISTINCT equilar_id AS other_equilar_id, UNNEST(cusips) AS ncusip
+        FROM db_merge) AS b
+    USING (ncusip)
     GROUP BY 1),
 
 dupes AS (
@@ -117,10 +118,8 @@ SELECT DISTINCT *,
 FROM other_directorships_dates AS b
 INNER JOIN original_names
 USING (other_equilar_id)
-LEFT JOIN stocknames
-USING (other_cusip)
 LEFT JOIN stockdates
-USING (other_permno)
+USING (other_equilar_id)
 INNER JOIN dupes
 USING (director_id);
 
@@ -128,4 +127,4 @@ ALTER TABLE director_bio.other_directorships OWNER TO director_bio_team;
 
 SET maintenance_work_mem='1GB';
 CREATE INDEX ON director_bio.other_directorships (director_id);
-CREATE INDEX ON director_bio.other_directorships (director_id, other_directorship);
+CREATE INDEX ON director_bio.other_directorships (director_id, other_directorships);
