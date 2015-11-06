@@ -11,8 +11,8 @@ from sqlalchemy import create_engine
 engine = create_engine('postgresql://iangow.me/crsp')
 
 sql = """
-    SELECT DISTINCT director_id, fy_end, a.file_name, a.bio,
-        b.other_director_id, b.other_directorship_names
+    SELECT DISTINCT director_id::text, fy_end, a.file_name, a.bio,
+        b.other_director_id::text, b.other_directorship_names
     FROM director_bio.bio_data AS a
     INNER JOIN director_bio.other_directorships AS b
     USING (director_id, fy_end)"""
@@ -41,4 +41,7 @@ engine.execute("""
 
     ALTER TABLE director_bio.regex_results
         ALTER COLUMN other_director_id TYPE equilar_director_id
-        USING other_director_id::equilar_director_id;""")
+        USING other_director_id::equilar_director_id;
+
+    CREATE INDEX ON director_bio.regex_results
+        (file_name, director_id, other_director_id)""")
