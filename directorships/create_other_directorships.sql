@@ -68,31 +68,10 @@ other_directorships_dates AS (
     LEFT JOIN term_dates AS c
     ON c.director_id = a.other_director_id),
 
-companies AS (
-    SELECT equilar_id, upper(UNNEST(companies)) AS company
-    FROM db_merge),
-
-tagged_directorships AS (
-    SELECT b.equilar_id AS other_equilar_id,
-        -- Convert name to upper case, convert multiple spaces to single spaces
-        upper(regexp_replace(as_tagged, '\s{2,}', ' ')) AS other_directorship_name
-    FROM director_bio.tagged_directorships AS a
-    INNER JOIN companies AS b
-    ON a.other_directorship=b.company),
-
-original_names_unnest AS (
-    SELECT equilar_id AS other_equilar_id,
-        UNNEST(original_names) AS other_directorship_name
-    FROM director.company_names
-    UNION
-    SELECT other_equilar_id, other_directorship_name
-    FROM tagged_directorships),
-
 original_names AS (
     SELECT other_equilar_id,
-        array_agg(DISTINCT other_directorship_name) AS other_directorship_names
-    FROM original_names_unnest
-    GROUP BY 1),
+        original_names AS other_directorship_names
+    FROM director.company_names),
 
 stockdates AS (
     SELECT other_equilar_id,

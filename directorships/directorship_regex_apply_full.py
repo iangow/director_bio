@@ -12,21 +12,24 @@ engine = create_engine('postgresql://iangow.me/crsp')
 
 sql = """
     SELECT DISTINCT director_id::text, fy_end, a.file_name, a.bio,
-        b.other_director_id::text, b.other_directorship_names
+        b.other_director_id::text,
+        array_cat(other_directorship_names, tagged_names) AS other_names
     FROM director_bio.bio_data AS a
     INNER JOIN director_bio.other_directorships AS b
-    USING (director_id, fy_end)"""
+    USING (director_id, fy_end)
+    LEFT JOIN director_bio.tagged_names
+    USING (other_equilar_id)"""
 
 df = pd.read_sql(sa.text(sql), engine)
 
 df['result'] =  df.apply(lambda row: names_in_bio(row['bio'],
-                                                  row['other_directorship_names']),
+                                                  row['other_names']),
                             axis=1)
 df['non_match'] = df['result'].map(lambda x: not x)
 
 # Delete columns not needed any more
 del df['bio']
-del df['other_directorship_names']
+del df['other_names']
 
 # Push data to PostgreSQL database
 df.to_sql('regex_results', engine, schema="director_bio",
