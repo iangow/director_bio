@@ -12,7 +12,7 @@ director AS (
     FROM director.director),
 
 db_merge AS (
-    SELECT equilar_id, fy_end, cusips, companies, ciks, gvkeys
+    SELECT equilar_id, fy_end, cusip, companies, cik, gvkeys
     FROM director.db_merge),
 
 matched_ids AS (
@@ -36,7 +36,7 @@ other_directorships AS (
 
         -- Identifiers for "this" company
         b.companies,
-        b.cusips, b.gvkeys, b.ciks,
+        b.cusip, b.gvkeys, b.cik,
 
         -- Matched director-level data
         c.directorid,
@@ -45,8 +45,8 @@ other_directorships AS (
 
         -- Identifiers for the "other" company
         d.companies AS other_directorships,
-        d.cusips AS other_cusips,
-        d.ciks AS other_ciks,
+        d.cusip AS other_cusip,
+        d.cik AS other_cik,
         d.gvkeys AS other_gvkeys
     FROM director AS a
     INNER JOIN db_merge AS b
@@ -101,7 +101,7 @@ stockdates AS (
         max(nameenddt) AS other_last_date
     FROM crsp.stocknames AS a
     INNER JOIN (
-        SELECT DISTINCT equilar_id AS other_equilar_id, UNNEST(cusips) AS ncusip
+        SELECT DISTINCT equilar_id AS other_equilar_id, cusip AS ncusip
         FROM db_merge) AS b
     USING (ncusip)
     GROUP BY 1),
