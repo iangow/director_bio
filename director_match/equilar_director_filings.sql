@@ -1,7 +1,9 @@
 SET work_mem='10GB';
 
 WITH directors AS (
-    SELECT DISTINCT (director.equilar_id(director_id), director.director_id(director_id))::equilar_director_id AS director_id,
+    SELECT DISTINCT
+        (director.equilar_id(director_id),
+            director.director_id(director_id))::equilar_director_id AS director_id,
         director, company, fy_end
     FROM director.director),
 
@@ -14,13 +16,13 @@ matched_directors AS (
     FROM directors
     INNER JOIN matches
     USING (director_id)),
-    
+
 companies AS (
     SELECT director_id, company, fy_end
     FROM directors),
-    
+
 director_companies AS (
-    SELECT DISTINCT a.director_id, a.fy_end, 
+    SELECT DISTINCT a.director_id, a.fy_end,
         array_agg(DISTINCT c.company) AS companies
     FROM matched_directors AS a
     INNER JOIN companies AS c
@@ -29,8 +31,8 @@ director_companies AS (
 
 SELECT c.director, c.company, c.fy_end, (a.director_id).*,
     a.companies,
-    'http://www.sec.gov/Archives/' || regexp_replace(file_name, 
-                   E'(\\d{10})-(\\d{2})-(\\d{6})\\.txt', 
+    'http://www.sec.gov/Archives/' || regexp_replace(file_name,
+                   E'(\\d{10})-(\\d{2})-(\\d{6})\\.txt',
                    E'\\1\\2\\3') AS url
 FROM director_companies AS a
 INNER JOIN directors AS c
