@@ -18,7 +18,7 @@ non_matches <- tbl(pg, sql("
         FROM director_bio.directorship_results
         GROUP BY 1
         ORDER BY 2 DESC
-        LIMIT 30),
+        LIMIT 100),
 
     bio_data AS (
         SELECT director_id, fy_end, file_name
