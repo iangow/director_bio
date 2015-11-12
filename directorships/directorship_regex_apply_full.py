@@ -4,7 +4,6 @@ import sqlalchemy as sa
 import pandas as pd
 
 import psycopg2 as pg
-import pandas as pd
 from pandas.io.sql import read_sql
 
 from sqlalchemy import create_engine
@@ -18,7 +17,9 @@ sql = """
     INNER JOIN director_bio.other_directorships AS b
     USING (director_id, fy_end)
     LEFT JOIN director_bio.tagged_names
-    USING (other_equilar_id)"""
+    USING (other_equilar_id)
+    -- WHERE director_id=(25387,913921)
+"""
 
 df = pd.read_sql(sa.text(sql), engine)
 

@@ -1,9 +1,11 @@
-CREATE TABLE director_bio.tagged_names AS 
+DROP TABLE IF EXISTS director_bio.tagged_names;
+
+CREATE TABLE director_bio.tagged_names AS
 
 WITH companies AS (
     SELECT DISTINCT director.equilar_id(company_id), company
     FROM director.co_fin),
-    
+
 tagged_directorships AS (
     SELECT b.equilar_id AS other_equilar_id,
         -- Convert name to upper case, convert multiple spaces to single spaces

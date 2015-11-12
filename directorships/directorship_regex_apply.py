@@ -12,11 +12,12 @@ sql = """
         directorship_present, c.uri
     FROM director_bio.bio_data AS a
     INNER JOIN director_bio.other_directorships AS b
-    USING (director_id)
+    USING (director_id, fy_end)
     LEFT JOIN director_bio.tagged_names
     USING (other_equilar_id)
     INNER JOIN director_bio.tagged_directorships AS c
-    ON b.director_id=c.director_id AND c.other_directorship=ANY(b.other_directorships)
+    ON b.director_id=c.director_id AND b.fy_end=c.fy_end
+        AND c.other_directorship=ANY(b.other_directorships)
     WHERE directorship_present;"""
 
 conn = pg.connect(dbname='crsp')

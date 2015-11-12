@@ -69,9 +69,10 @@ other_directorships_dates AS (
     ON c.director_id = a.other_director_id),
 
 original_names AS (
-    SELECT other_equilar_id,
-        original_names AS other_directorship_names
-    FROM director.company_names),
+    SELECT DISTINCT director.equilar_id(company_id) AS other_equilar_id,
+        array_agg(DISTINCT company) AS other_directorship_names
+    FROM director.co_fin
+    GROUP BY 1),
 
 stockdates AS (
     SELECT other_equilar_id,
