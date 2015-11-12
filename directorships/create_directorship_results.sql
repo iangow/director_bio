@@ -1,4 +1,4 @@
-SET work_mem='3GB';
+﻿SET work_mem='3GB';
 
 DROP TABLE IF EXISTS director_bio.directorship_results;
 
@@ -20,21 +20,21 @@ bio_data AS (
     SELECT director_id, fy_end, file_name
     FROM director_bio.bio_data)
 
-SELECT b.*, a.director, c.result, c.non_match, d.date_filed,
-    e.mult_permnos
+SELECT b.*, a.director, d.result, d.non_match, e.date_filed,
+    c.mult_permnos
 FROM director_bio.bio_data AS a
 INNER JOIN director_bio.other_directorships AS b
 USING (director_id, fy_end)
-INNER JOIN mult_permnos AS e
+INNER JOIN mult_permnos AS c
 USING (director_id, fy_end, other_director_id)
-INNER JOIN director_bio.regex_results AS c
+INNER JOIN director_bio.regex_results AS d
 USING (file_name, director_id, other_director_id)
-INNER JOIN filings.filings AS d
+INNER JOIN filings.filings AS e
 USING (file_name)
-INNER JOIN director
-USING (director_id, fy_end)
-INNER JOIN bio_data
-USING (director_id, fy_end);
+INNER JOIN director AS f
+ON a.director_id=f.director_id AND a.fy_end=f.fy_end
+INNER JOIN bio_data AS g
+ON a.director_id=g.director_id AND a.fy_end=g.fy_end;
 
 ALTER TABLE director_bio.directorship_results OWNER TO director_bio_team;
 CREATE INDEX ON director_bio.directorship_results (director_id);
