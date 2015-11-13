@@ -67,7 +67,9 @@ rs <- dbGetQuery(pg, "
             USING (equilar_id, director_id)::equilar_director_id;
 
     ALTER TABLE director_bio.bio_data OWNER TO director_bio_team;
+    GRANT SELECT ON director_bio.bio_data TO jheese;
 
-    CREATE INDEX ON director_bio.bio_data (file_name);")
+    CREATE INDEX ON director_bio.bio_data (file_name);
+    CREATE INDEX ON director_bio.bio_data (director_id, fy_end);")
 
 rs <- dbDisconnect(pg)

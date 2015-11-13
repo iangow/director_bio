@@ -2,10 +2,10 @@
 library(dplyr)
 pg <- src_postgres()
 
-sql <- "SELECT DISTINCT username, uri, updated -- , category
-        FROM director_bio.tagging_data
-        WHERE category='bio' AND updated >= '2015-08-24'"
-
+sql <- "SELECT DISTINCT username, uri, updated, category
+        FROM director_bio.raw_tagging_data
+        WHERE updated >= '2015-09-24'"
+# category='directorships' 'bio' AND
 bio_data <- tbl(pg, sql(sql))
 
 bio_data <- as.data.frame(bio_data)

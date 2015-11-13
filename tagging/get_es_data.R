@@ -24,8 +24,8 @@ get_es_data <- function() {
             temp_df <- temp$rows
 
             # Delete these rows, which are lists, to allow rbind to work.
-            # Alternative would be to convert to text, then parse back in PostgreSQL.
-            # temp_df$ranges <- NULL
+            # Alternative would be to convert to text, then parse back in
+            # PostgreSQL. temp_df$ranges <- NULL
             temp_df$user <- NULL
             temp_df$consumer <- NULL
             temp_df$permissions <- NULL
