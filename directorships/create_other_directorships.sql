@@ -108,3 +108,4 @@ ALTER TABLE director_bio.other_directorships OWNER TO director_bio_team;
 SET maintenance_work_mem='1GB';
 CREATE INDEX ON director_bio.other_directorships (director_id);
 CREATE INDEX ON director_bio.other_directorships (director_id, other_directorships);
+CREATE INDEX ON director_bio.other_directorships (director_id, fy_end);

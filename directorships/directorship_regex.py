@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 def name_to_pattern(name):
     """This function takes a name and converts it to a regular expression
     pattern for matching.
@@ -27,6 +28,9 @@ def name_to_pattern(name):
     # pattern = re.sub(",\s+", ",?\s*", pattern)
     pattern = re.sub(r'\s+CO(MPANY)?\b', "(?: Co(?:mpany))?", pattern)
     pattern = re.sub(r'\s+&\s+', "(?: & | and )", pattern)
+
+    # Address curly apostrophes
+    pattern = re.sub(r"['\u2019]", "['\u2019]", pattern)
 
     # US matches U.S. and vice versa
     pattern = re.sub(r'\bU\.?S\.?\b', 'U\.?S\.?', pattern)
