@@ -5,6 +5,7 @@ def name_to_pattern(name):
     """
 
     import re
+    
     pattern = re.sub(r'\s+[\\/]([A-Z]+|DE|IN|OHIO)[\\/]', "", name)
     pattern = re.sub(r'-\s+', '-', pattern)
 
@@ -57,6 +58,9 @@ def apply_regex(bio, pattern):
 
     def clean_bio(bio_text):
 
+        # Remove non-breaking spaces from names
+        new_text = bio_text.replace(u'\xa0', u' ')
+
         new_text = re.sub(r'\n', " ", bio_text)
         new_text = re.sub(r'^\s*(The|THE)\s+', "", new_text)
         new_text = re.sub(r'\b-\s+\b', "-", new_text)
@@ -71,6 +75,12 @@ def names_to_pattern(names):
     """This function takes a list of names and returns a regular expression
     pattern that can be used to match them in text
     """
+    # Remove non-breaking spaces from names
+    names = [name.replace(u'\xa0', u' ') for name in names]
+
+    # Only check distinct names
+    names = list(set(names))
+
     patterns = [name_to_pattern(name) for name in names]
     pattern = '(' + '|'.join(patterns) + ')'
     return pattern
