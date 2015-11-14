@@ -9,36 +9,35 @@ get_es_data <- function() {
     library(jsonlite)
     library(curl)
 
-    df <- data.frame()
-    i <- 0L
+    MAX_ROWS <- 200
+    temp <- fromJSON("http://annotator-store.marder.io/search?limit=1")
+
+    i_max <- as.integer(floor(temp$total/MAX_ROWS))
 
     # Go through the page
-    while (TRUE) {
+    get_data <- function(i) {
 
         temp <- fromJSON(paste0("http://annotator-store.marder.io/",
-                                "search?limit=200&offset=", i*200))
+                                "search?limit=200&offset=", i*MAX_ROWS))
 
-        if (length(temp$rows)==0) {
-            break
-        } else {
-            temp_df <- temp$rows
+        temp_df <- temp$rows
 
-            # Delete these rows, which are lists, to allow rbind to work.
-            # Alternative would be to convert to text, then parse back in
-            # PostgreSQL. temp_df$ranges <- NULL
-            temp_df$user <- NULL
-            temp_df$consumer <- NULL
-            temp_df$permissions <- NULL
-            df <- rbind(df, temp_df)
-        }
-        i <- i + 1L
+        # Delete these rows, which are lists, to allow rbind to work.
+        # Alternative would be to convert to text, then parse back in
+        # PostgreSQL. temp_df$ranges <- NULL
+        temp_df$user <- NULL
+        temp_df$consumer <- NULL
+        temp_df$permissions <- NULL
+        temp_df
     }
 
+    df_list <- mclapply(1:i_max, get_data, mc.cores=6)
+    df <- do.call("rbind", df_list)
     return(df)
 }
 
 # Code to get and clean data ----
-bio_data_raw <- get_es_data()
+system.time(bio_data_raw <- get_es_data())
 bio_data <- bio_data_raw
 library(parallel)
 
@@ -75,4 +74,3 @@ rs <- dbGetQuery(pg, "
 sql <- "ALTER TABLE director_bio.raw_tagging_data OWNER TO director_bio_team;"
 rs <- dbGetQuery(pg, sql)
 rs <- dbDisconnect(pg)
-
