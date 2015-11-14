@@ -6,3 +6,4 @@ moss
 .httr-oauth
 *.csv
 *.xlsx
+directorships.pickle
