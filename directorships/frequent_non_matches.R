@@ -12,10 +12,14 @@ non_matches <- tbl(pg, sql("
         FROM director.director),
 
     frequent_non_matches AS (
-        SELECT (other_director_id::equilar_director_id).equilar_id AS other_equilar_id,
+       SELECT (other_director_id::equilar_director_id).equilar_id AS other_equilar_id,
             sum(non_match::integer) AS num_non_matches,
-            sum(non_match::integer)/count(non_match)::float8 AS prop_non_matches
+            sum(non_match::integer)/count(non_match)::float8 AS prop_non_matches,
+            array_agg(DISTINCT other_directorships[1]) AS other_directorship_names
         FROM director_bio.directorship_results
+        WHERE other_start_date < date_filed
+            AND (date_filed < other_end_date OR other_end_date IS NULL)
+            AND other_public_co
         GROUP BY 1
         ORDER BY 2 DESC
         LIMIT 50),
@@ -29,11 +33,12 @@ non_matches <- tbl(pg, sql("
             other_directorships, other_public_co, other_start_date, date_filed,
             other_end_date
         FROM director_bio.directorship_results
-        -- WHERE non_match AND other_public_co AND other_start_date < date_filed
-        --   AND (other_end_date > date_filed OR other_end_date IS NULL)
-    )
+        WHERE non_match
+            AND other_public_co
+            AND other_start_date < date_filed
+            AND (other_end_date > date_filed OR other_end_date IS NULL))
 
-    SELECT *
+    SELECT DISTINCT *
     FROM results
     INNER JOIN frequent_non_matches
     USING (other_equilar_id)
