@@ -12,12 +12,15 @@ engine = create_engine('postgresql://iangow.me/crsp')
 sql = """
     SELECT DISTINCT director_id::text, fy_end, a.file_name, a.bio,
         b.other_director_id::text,
-        array_cat(other_directorship_names, tagged_names) AS other_names
+        array_cat(array_cat(other_directorship_names, tagged_names),
+                    sec_names) AS other_names
     FROM director_bio.bio_data AS a
     INNER JOIN director_bio.other_directorships AS b
     USING (director_id, fy_end)
     LEFT JOIN director_bio.tagged_names
     USING (other_equilar_id)
+    LEFT JOIN filings.sec_names
+    USING (cik)
     """
 
 df = pd.read_sql(sa.text(sql), engine)
@@ -45,7 +48,7 @@ engine.execute(
     """
     ALTER TABLE director_bio.regex_results
     OWNER TO director_bio_team;
-    
+
     ALTER TABLE director_bio.regex_results
         ALTER COLUMN director_id TYPE equilar_director_id
         USING director_id::equilar_director_id;
