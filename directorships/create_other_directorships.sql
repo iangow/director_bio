@@ -23,12 +23,17 @@ matched_ids AS (
     FROM director.director_matches),
 
 term_dates AS (
-    SELECT (director.equilar_id(director_id),
-            director.director_id(director_id))::equilar_director_id AS director_id,
-        min(start_date) AS start_date,
-        max(term_end_date) AS end_date
-    FROM director.director
-    GROUP BY 1),
+    SELECT (equilar_id, director_id)::equilar_director_id AS director_id,
+        start_date,
+        COALESCE(end_date, boardex_term_end_date,
+                 implied_end_date, last_fy_end) AS end_date,
+        CASE
+            WHEN end_date IS NOT NULL THEN 'Equilar'
+            WHEN boardex_term_end_date IS NOT NULL THEN 'BoardEx'
+            WHEN implied_end_date IS NOT NULL THEN 'Implied'
+            WHEN implied_end_date IS NULL THEN 'Last Year'
+        END AS end_date_source
+    FROM director.term_end_dates),
 
 other_directorships AS (
     SELECT DISTINCT
@@ -59,9 +64,10 @@ other_directorships AS (
 
 other_directorships_dates AS (
     SELECT a.*,
-        b.start_date, b.end_date,
+        b.start_date, b.end_date, b.end_date_source,
         c.start_date AS other_start_date,
-        c.end_date AS other_end_date
+        c.end_date AS other_end_date,
+        c.end_date_source AS other_end_date_source
     FROM other_directorships AS a
     INNER JOIN term_dates AS b
     USING (director_id)
