@@ -8,6 +8,7 @@ get_es_data <- function() {
 
     library(jsonlite)
     library(curl)
+    library(parallel)
 
     MAX_ROWS <- 200
     temp <- fromJSON("http://annotator-store.marder.io/search?limit=1")
@@ -39,7 +40,7 @@ get_es_data <- function() {
 # Code to get and clean data ----
 system.time(bio_data_raw <- get_es_data())
 bio_data <- bio_data_raw
-library(parallel)
+
 
 bio_data$director <- bio_data$text
 bio_data$text <- NULL
