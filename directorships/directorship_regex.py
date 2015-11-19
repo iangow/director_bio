@@ -5,7 +5,7 @@ def name_to_pattern(name):
     """
 
     import re
-    
+
     pattern = re.sub(r'\s+[\\/]([A-Z]+|DE|IN|OHIO)[\\/]', "", name)
     pattern = re.sub(r'-\s+', '-', pattern)
 
@@ -42,9 +42,12 @@ def name_to_pattern(name):
     pattern = re.sub(r'\s+HOLDINGS\b', "(?: Holdings)?", pattern)
     pattern = re.sub(r'\s+GROUP\b', "(?: Group)?", pattern)
     pattern = re.sub(r'\s+LTD\b', "(?: Ltd)?", pattern)
-    
+
     # Allow spaces to be matched by hyphens
     pattern = re.sub(r'(?:\\-|\\ )+', "[-\\s]+", pattern)
+
+    # Allow "and" to be matched by "&" and vice versa
+    pattern = re.sub(r'(?:and|&)', '(?:and|&)', pattern)
 
     # Add parentheses
     pattern = '(?:' + pattern + ')'
