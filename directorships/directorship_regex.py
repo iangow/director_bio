@@ -49,7 +49,7 @@ def name_to_pattern(name):
     pattern = re.sub(r'[\-\s]+', "[\-\s]+", pattern)
 
     # Allow "and" to be matched by "&" and vice versa
-    pattern = re.sub(r'(?:and|&)', '(?:and|&)', pattern)
+    pattern = re.sub(r'\b(and|&)\b', '\b(?:and|&)\b', pattern)
 
     # Add parentheses
     pattern = '(?:' + pattern + ')'
