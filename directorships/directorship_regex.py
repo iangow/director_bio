@@ -8,7 +8,7 @@ def name_to_pattern(name):
 
     # Remove state abbreviations
     pattern = re.sub(r'\s+[\\/]([A-Z]+|DE|IN|OHIO)[\\/]', "", name)
-    pattern = re.sub(r'/[A-Z]{2}$', "", pattern)
+    pattern = re.sub(r'[A-Z]{2}$', "", pattern)
 
     # Replace special regex characters
     pattern = re.escape(pattern)
