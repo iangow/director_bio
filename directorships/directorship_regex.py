@@ -44,7 +44,7 @@ def name_to_pattern(name):
     pattern = re.sub(r'\s+LTD\b', "(?: Ltd)?", pattern)
 
     # Allow spaces to be matched by hyphens
-    pattern = re.sub(r'(?:\\-|\\ )+', "[-\\s]+", pattern)
+    pattern = re.sub(r'[\-\s]+', "[\-\s]+", pattern)
 
     # Allow "and" to be matched by "&" and vice versa
     pattern = re.sub(r'(?:and|&)', '(?:and|&)', pattern)
