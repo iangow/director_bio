@@ -6,8 +6,9 @@ def name_to_pattern(name):
 
     import re
 
+    # Remove state abbreviations
     pattern = re.sub(r'\s+[\\/]([A-Z]+|DE|IN|OHIO)[\\/]', "", name)
-    pattern = re.sub(r'-\s+', '-', pattern)
+    pattern = re.sub(r'/[A-Z]{2}$', "", pattern)
 
     # Replace special regex characters
     pattern = re.escape(pattern)
@@ -44,6 +45,7 @@ def name_to_pattern(name):
     pattern = re.sub(r'\s+LTD\b', "(?: Ltd)?", pattern)
 
     # Allow spaces to be matched by hyphens
+    pattern = re.sub(r'-\s+', '-', pattern)
     pattern = re.sub(r'[\-\s]+', "[\-\s]+", pattern)
 
     # Allow "and" to be matched by "&" and vice versa
