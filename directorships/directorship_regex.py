@@ -43,10 +43,10 @@ def name_to_pattern(name):
 
     # Allow spaces to be matched by hyphens
     pattern = re.sub(r'-\s+', '-', pattern)
-    pattern = re.sub(r'[\-\s]+', "[\-\s]+", pattern)
+    pattern = re.sub(r'(?:\\\-|\s)+', r'[\-\s]+', pattern)
 
     # Allow "and" to be matched by "&" and vice versa
-    pattern = re.sub(r'\b(and|&)\b', '\b(?:and|&)\b', pattern)
+    pattern = re.sub(r'(?<=\s)(and|&)(?=\s)', '(?:and|&)', pattern)
 
     # Add parentheses
     pattern = '(?:' + pattern + ')'
