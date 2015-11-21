@@ -27,10 +27,6 @@ def name_to_pattern(name):
     pattern = re.sub(r'\.', ".?", pattern)
     pattern = re.sub(r'^THE ', "(?:THE )?", pattern)
 
-    # pattern = re.sub(",\s+", ",?\s*", pattern)
-    pattern = re.sub(r'\s+CO(MPANY)?\b', "(?: Co(?:mpany))?", pattern)
-    pattern = re.sub(r'\s+&\s+', "(?: & | and )", pattern)
-
     # Address curly apostrophes
     pattern = re.sub(u"’", "'", pattern)
 
@@ -38,7 +34,8 @@ def name_to_pattern(name):
     pattern = re.sub(r'\bU\.?S\.?\b', 'U\.?S\.?', pattern)
 
     # Variants on incorporated, corporation, etc., which are often omitted
-    pattern = re.sub(r'\s+INC\b\.?', "(?: Inc(?:\.|orporated)?)?", pattern)
+    pattern = re.sub(r'\s+CO(MPANY)?\b', "(?: Co(?:\.|mpany)?)?", pattern)
+    pattern = re.sub(r'\s+INC(?:\b|\.|ORPORATED)', "(?: Inc(?:\.|orporated)?)?", pattern)
     pattern = re.sub(r'\s+(?:CORP|ORATION)\b\.?', "(?: Co(?:rp(?:oration)?))?", pattern)
     pattern = re.sub(r'\s+HOLDINGS\b', "(?: Holdings)?", pattern)
     pattern = re.sub(r'\s+GROUP\b', "(?: Group)?", pattern)
