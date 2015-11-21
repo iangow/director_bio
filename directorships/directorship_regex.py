@@ -1,10 +1,10 @@
 # -*- coding: UTF-8 -*-
+import re 
+
 def name_to_pattern(name):
     """This function takes a name and converts it to a regular expression
     pattern for matching.
     """
-
-    import re
 
     # Remove state abbreviations
     pattern = re.sub(r'\s+[\\/]([A-Z]+|DE|IN|OHIO)[\\/]', "", name)
@@ -55,27 +55,27 @@ def name_to_pattern(name):
     pattern = '(?:' + pattern + ')'
     return pattern
 
+def clean_bio(bio_text):
+
+	# Remove non-breaking spaces from names
+	new_text = bio_text.replace(u'\xa0', u' ')
+
+	# Convert curly apostrophes
+	new_text = re.sub(u"’", "'", new_text)
+
+	# Fix up spaces
+	new_text = re.sub(r'\n', " ", new_text)
+	new_text = re.sub(r'\s+', " ", new_text)
+	
+	new_text = re.sub(r'^\s*(The|THE)\s+', "", new_text)
+	new_text = re.sub(r'\b-\s+\b', "-", new_text)
+	new_text = re.sub(r',', '', new_text)
+	return new_text
+        
 def apply_regex(bio, pattern):
     """This function takes a bio and a regular expression pattern and returns
     the matches, if any.
     """
-
-    import re
-
-    def clean_bio(bio_text):
-
-        # Remove non-breaking spaces from names
-        new_text = bio_text.replace(u'\xa0', u' ')
-
-        # Convert curly apostrophes
-        new_text = re.sub(u"’", "'", new_text)
-
-        new_text = re.sub(r'\n', " ", new_text)
-        new_text = re.sub(r'^\s*(The|THE)\s+', "", new_text)
-        new_text = re.sub(r'\b-\s+\b', "-", new_text)
-        new_text = re.sub(r'\s+', " ", new_text)
-        new_text = re.sub(r',', '', new_text)
-        return new_text
 
     cleaned_bio = clean_bio(bio)
     return re.findall(pattern, cleaned_bio, flags=re.I)
