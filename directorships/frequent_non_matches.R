@@ -12,7 +12,8 @@ non_matches <- tbl(pg, sql("
         FROM director.director),
 
     frequent_non_matches AS (
-       SELECT (other_director_id::equilar_director_id).equilar_id AS other_equilar_id,
+       SELECT
+            (other_director_id::equilar_director_id).equilar_id AS other_equilar_id,
             sum(non_match::integer) AS num_non_matches,
             sum(non_match::integer)/count(non_match)::float8 AS prop_non_matches,
             array_agg(DISTINCT other_directorships[1]) AS other_directorship_names
@@ -21,8 +22,8 @@ non_matches <- tbl(pg, sql("
             AND (date_filed < other_end_date OR other_end_date IS NULL)
             AND other_public_co
         GROUP BY 1
-        ORDER BY 2 DESC
-        LIMIT 50),
+        ORDER BY 3 DESC
+        LIMIT 200),
 
     bio_data AS (
         SELECT director_id, fy_end, file_name
@@ -50,12 +51,15 @@ non_matches <- tbl(pg, sql("
     collect()
 
 get_directorship_url <- function(file_name, director_id) {
-    url <- gsub('^edgar/data', 'http://hal.marder.io/directorships', file_name)
-    url <- gsub('(\\d{10})-(\\d{2})-(\\d{6})\\.txt', '\\1\\2\\3', url)
+    url <- gsub('^edgar/data',
+                'http://hal.marder.io/directorships', file_name)
+    url <- gsub('(\\d{10})-(\\d{2})-(\\d{6})\\.txt',
+                '\\1\\2\\3', url)
     return(paste(url, director_id, sep="/"))
 }
 
-non_matches$url <- unlist(mapply(get_directorship_url, non_matches$file_name,
+non_matches$url <- unlist(mapply(get_directorship_url,
+                                 non_matches$file_name,
        non_matches$director_id_original))
 
 library(readr)
