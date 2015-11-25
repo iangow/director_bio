@@ -29,7 +29,7 @@ df = pd.read_sql(sa.text(sql), engine)
 # df = pd.read_pickle('directorships.pickle')
 
 # Apply regular expression code to bios and names
-from directorship_regex import names_in_bio
+from directorship_regex import names_in_bio, clean_bio
 df['result'] = df.apply(lambda row: names_in_bio(row['bio'],
                                                  row['other_names']),
                         axis=1)
