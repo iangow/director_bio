@@ -23,7 +23,7 @@ non_matches <- tbl(pg, sql("
             AND other_public_co
         GROUP BY 1
         ORDER BY 3 DESC
-        LIMIT 200),
+        LIMIT 1000),
 
     bio_data AS (
         SELECT director_id, fy_end, file_name
@@ -37,7 +37,10 @@ non_matches <- tbl(pg, sql("
         WHERE non_match
             AND other_public_co
             AND other_start_date < date_filed
-            AND (other_end_date > date_filed OR other_end_date IS NULL))
+            AND (other_end_date > date_filed OR other_end_date IS NULL)
+            AND (director_id, other_director_id) NOT IN
+                (SELECT director_id, other_director_id
+                FROM director_bio.ra_checked))
 
     SELECT DISTINCT *
     FROM results
