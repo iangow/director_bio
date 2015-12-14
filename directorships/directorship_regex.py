@@ -7,7 +7,7 @@ def name_to_pattern(name):
     """
 
     # Remove state abbreviations
-    pattern = re.sub(r'\s+[\\/]([A-Z]+|DE|IN|OHIO)[\\/]', "", name)
+    pattern = re.sub(r'\s*[\\/]([A-Z]+|DE|IN|OHIO)[\\/]', "", name)
     pattern = re.sub(r'/[A-Z]{2}$', "", pattern)
 
     # Replace special regex characters
@@ -54,20 +54,20 @@ def name_to_pattern(name):
 
 def clean_bio(bio_text):
 
-	# Remove non-breaking spaces from names
-	new_text = bio_text.replace(u'\xa0', u' ')
+    # Remove non-breaking spaces from names
+    new_text = bio_text.replace(u'\xa0', u' ')
 
-	# Convert curly apostrophes
-	new_text = re.sub(u"’", "'", new_text)
+    # Convert curly apostrophes
+    new_text = re.sub(u"’", "'", new_text)
 
-	# Fix up spaces
-	new_text = re.sub(r'\n', " ", new_text)
-	new_text = re.sub(r'\s+', " ", new_text)
-	
-	new_text = re.sub(r'^\s*(The|THE)\s+', "", new_text)
-	new_text = re.sub(r'\b-\s+\b', "-", new_text)
-	new_text = re.sub(r',', '', new_text)
-	return new_text
+    # Fix up spaces
+    new_text = re.sub(r'\n', " ", new_text)
+    new_text = re.sub(r'\s+', " ", new_text)
+    
+    new_text = re.sub(r'^\s*(The|THE)\s+', "", new_text)
+    new_text = re.sub(r'\b-\s+\b', "-", new_text)
+    new_text = re.sub(r',', '', new_text)
+    return new_text
         
 def apply_regex(bio, pattern):
     """This function takes a bio and a regular expression pattern and returns
@@ -90,9 +90,22 @@ def names_to_pattern(names):
     patterns = [name_to_pattern(name) for name in names]
     pattern = '(' + '|'.join(patterns) + ')'
     return pattern
+    
+def edit_bio(bio_text):
+
+    # Remove apostrophes, commas and dashes
+    new_text = re.sub(u"(-|’|'|,)", "", bio_text)
+
+    return new_text
 
 def names_in_bio(bio, names):
     """This simple function checks for matches in a bio from a list of names."""
     pattern = names_to_pattern(names)
 
-    return apply_regex(bio, pattern)
+    result_1 = apply_regex(bio, pattern)
+    
+    if result_1:
+        return result_1
+    else:
+        result_2 = apply_regex(edit_bio(bio), pattern)
+        return result_2
