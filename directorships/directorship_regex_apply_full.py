@@ -19,8 +19,8 @@ sql = """
     USING (director_id, fy_end)
     LEFT JOIN director_bio.tagged_names
     USING (other_equilar_id)
-    LEFT JOIN filings.sec_names
-    USING (cik)
+    LEFT JOIN filings.sec_names AS d
+    ON b.other_cik=d.cik
     """
 
 df = pd.read_sql(sa.text(sql), engine)
