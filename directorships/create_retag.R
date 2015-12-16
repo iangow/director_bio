@@ -1,5 +1,8 @@
 library(dplyr)
 library(tidyr)
+
+pg <- src_postgres()
+
 regex_results <- tbl(pg, sql("SELECT * FROM director_bio.regex_results"))
 
 other_dirs <-
@@ -23,18 +26,33 @@ who_tagged <- tbl(pg, sql("
     WHERE category='bio'
     GROUP BY file_name"))
 
+missing_dirs <- tbl(pg, sql("
+    WITH missing_dirs AS (
+        SELECT DISTINCT file_name, unnest(other_directorships) AS other_directorship
+        FROM director_bio.other_directorships
+        INNER JOIN director_bio.regex_results
+        USING (director_id, other_director_id, fy_end)
+        WHERE non_match
+            AND other_start_date < fy_end
+            AND other_first_date < other_end_date
+            AND other_last_date > other_start_date)
+    SELECT file_name, array_agg(DISTINCT other_directorship) AS other_directorships
+    FROM missing_dirs
+    GROUP BY file_name"))
+
 to_retag <-
     regex_results %>%
     semi_join(other_dirs) %>%
     group_by(file_name, non_match) %>%
     summarize(count = n()) %>%
     inner_join(who_tagged) %>%
+    inner_join(missing_dirs) %>%
     collect() %>%
     mutate(non_match = tolower(substr(non_match,1,1))) %>%
     spread(non_match, count, fill = 0) %>%
     rename(non_match = t, match = f) %>%
     mutate(total = non_match + match, prop = non_match/total) %>%
-    filter(total > 5, prop > 0.95) %>%
+    filter(total > 5, prop > 0.75) %>%
     mutate(url = tagging_url(file_name))
 
 library(readr)
