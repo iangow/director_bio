@@ -33,12 +33,16 @@ rs <- dbGetQuery(pg, "
         USING other_director_id::equilar_director_id;")
 
 rs <- dbGetQuery(pg, "
+    ALTER TABLE director_bio.ra_checked
+    ALTER COLUMN fy_end TYPE date
+        USING fy_end::date;")
+
+rs <- dbGetQuery(pg, "
     ALTER TABLE director_bio.ra_checked OWNER TO director_bio_team;")
 
 rs <- dbGetQuery(pg, "
     CREATE INDEX ON director_bio.ra_checked (director_id, other_director_id);")
 
-
-ra_checked %>% 
-    filter(grepl("[7]$", sheet)) %>% 
+ra_checked %>%
+    filter(grepl("[7]$", sheet)) %>%
     with(table(Comment, Assignee))
