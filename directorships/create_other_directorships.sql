@@ -12,8 +12,10 @@ director AS (
     FROM director.director),
 
 db_merge AS (
-    SELECT equilar_id, fy_end, cusip, companies, cik, gvkeys
-    FROM director.db_merge),
+    SELECT equilar_id, fy_end, b.cusip, companies, b.cik, gvkey
+    FROM director.db_merge AS a
+    INNER JOIN director.equilar_proxies AS b
+    USING (equilar_id, fy_end)),
 
 matched_ids AS (
     SELECT director_id, (director_id).equilar_id,
@@ -41,7 +43,7 @@ other_directorships AS (
 
         -- Identifiers for "this" company
         b.companies,
-        b.cusip, b.gvkeys, b.cik,
+        b.cusip, b.gvkey, b.cik,
 
         -- Matched director-level data
         c.directorid,
@@ -52,7 +54,7 @@ other_directorships AS (
         d.companies AS other_directorships,
         d.cusip AS other_cusip,
         d.cik AS other_cik,
-        d.gvkeys AS other_gvkeys
+        d.gvkey AS other_gvkey
     FROM director AS a
     INNER JOIN db_merge AS b
     USING (equilar_id, fy_end)
