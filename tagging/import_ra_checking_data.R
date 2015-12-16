@@ -25,14 +25,24 @@ rs <- dbWriteTable(pg, c("director_bio", "ra_checked"), ra_checked %>% as.data.f
 rs <- dbGetQuery(pg, "
     ALTER TABLE director_bio.ra_checked
     ALTER COLUMN director_id TYPE equilar_director_id
-        USING director_id::equilar_director_id;
+        USING director_id::equilar_director_id;")
 
+rs <- dbGetQuery(pg, "
     ALTER TABLE director_bio.ra_checked
     ALTER COLUMN other_director_id TYPE equilar_director_id
-        USING other_director_id::equilar_director_id;
+        USING other_director_id::equilar_director_id;")
 
-    ALTER TABLE director_bio.ra_checked OWNER TO director_bio_team;
+rs <- dbGetQuery(pg, "
+    ALTER TABLE director_bio.ra_checked
+    ALTER COLUMN fy_end TYPE date
+        USING fy_end::date;")
 
+rs <- dbGetQuery(pg, "
+    ALTER TABLE director_bio.ra_checked OWNER TO director_bio_team;")
+
+rs <- dbGetQuery(pg, "
     CREATE INDEX ON director_bio.ra_checked (director_id, other_director_id);")
 
- ra_checked %>% filter(grepl("[7]$", sheet)) %>% with(table(Comment, Assignee))
+ra_checked %>%
+    filter(grepl("[7]$", sheet)) %>%
+    with(table(Comment, Assignee))

@@ -7,7 +7,7 @@ gs <- gs_key("1LeYyCOjK0gq8NVLiGumqyzbCBXAnaiM3nAXmgcoc84Y")
 
 test_data <-  gs_read(gs, ws="test_1") %>%
     select(director_id, other_director_id, fy_end, date_filed,
-           other_dir_disclosed, as_disclosed, comment, filing_link,
+           other_dir_undisclosed, as_disclosed, comment, filing_link,
            proposed_resolution)
 
 test_data$fy_end <- as.Date(test_data$fy_end)

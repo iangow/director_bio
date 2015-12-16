@@ -8,3 +8,4 @@ moss
 *.xlsx
 directorships.pickle
 *.Rout
+*.pyc

@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-import re 
+import re
 
 def name_to_pattern(name):
     """This function takes a name and converts it to a regular expression
@@ -63,12 +63,12 @@ def clean_bio(bio_text):
     # Fix up spaces
     new_text = re.sub(r'\n', " ", new_text)
     new_text = re.sub(r'\s+', " ", new_text)
-    
+
     new_text = re.sub(r'^\s*(The|THE)\s+', "", new_text)
     new_text = re.sub(r'\b-\s+\b', "-", new_text)
     new_text = re.sub(r',', '', new_text)
     return new_text
-        
+
 def apply_regex(bio, pattern):
     """This function takes a bio and a regular expression pattern and returns
     the matches, if any.
@@ -90,11 +90,18 @@ def names_to_pattern(names):
     patterns = [name_to_pattern(name) for name in names]
     pattern = '(' + '|'.join(patterns) + ')'
     return pattern
-    
+
 def edit_bio(bio_text):
 
     # Remove apostrophes, commas and dashes
     new_text = re.sub(u"(-|’|'|,)", "", bio_text)
+
+    return new_text
+
+def edit_bio_alt(bio_text):
+
+    # Remove apostrophes, commas and dashes
+    new_text = re.sub("\s", "", bio_text)
 
     return new_text
 
@@ -103,9 +110,14 @@ def names_in_bio(bio, names):
     pattern = names_to_pattern(names)
 
     result_1 = apply_regex(bio, pattern)
-    
+
     if result_1:
         return result_1
     else:
         result_2 = apply_regex(edit_bio(bio), pattern)
+
+    if result_2:
         return result_2
+    else:
+        result_3 = apply_regex(edit_bio_alt(bio), pattern)
+        return result_3
