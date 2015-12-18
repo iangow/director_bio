@@ -5,9 +5,10 @@ pg <- src_postgres()
 
 sql <- sql("
     SELECT a.director_id, a.fy_end, companies[1] AS company,
+        cik,
         other_director_id, director, file_name,
         other_directorships, other_start_date, other_end_date,
-        directorid
+        other_cik, directorid
     FROM director_bio.bio_data AS a
     INNER JOIN director_bio.other_directorships AS b
     USING (director_id, fy_end)
@@ -27,8 +28,14 @@ tagging_url <- function(file_name) {
 
 # We want to exclude observations that we've already looked at.
 already_sampled <-
-    tbl(pg, sql("SELECT * FROM director_bio.test_data")) %>%
-    select(director_id, other_director_id, fy_end)
+    tbl(pg, sql("
+        SELECT director_id, other_director_id, fy_end
+        FROM director_bio.test_data
+        UNION
+        SELECT director_id::equilar_director_id,
+            other_director_id::equilar_director_id, fy_end::date
+        FROM director_bio.test_data_2"))
+    # %>% select(director_id, other_director_id, fy_end)
 
 # Use CRSP to match tickers and CUSIPs to permcos ----
 full_sample <- tbl(pg, sql) %>%
@@ -64,4 +71,4 @@ sample %>%
     with(table(to_retag, empty_director, useNA="ifany"))
 
 library(readr)
-write_csv(sample, path = "~/Google Drive/director_bio/test_sample_2.csv")
+write_csv(sample, path = "~/Google Drive/director_bio/test_sample.csv")

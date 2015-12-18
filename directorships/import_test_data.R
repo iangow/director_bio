@@ -1,6 +1,8 @@
+
 library(googlesheets)
 library(dplyr)
 
+# Get the first test sample ----
 # You might need to run the next line first (remove # to do so).
 # gs_auth()
 gs <- gs_key("1LeYyCOjK0gq8NVLiGumqyzbCBXAnaiM3nAXmgcoc84Y")
@@ -72,4 +74,19 @@ who_tagged %>%
     collect() %>%
     with(table(tagged_by, proposed_resolution))
 
-library(readr)
+# Get the second test sample
+gs <- gs_key("16lq6rFmBUDoALvzAItTxcytVMEDv4yqOGmLFkoJrOqE")
+
+test_data_2 <-  gs_read(gs, ws="test_sample #2") %>%
+    select(director_id, other_director_id, fy_end,
+           other_dir_undisclosed, as_disclosed, comment,
+           proposed_resolution)
+
+test_data_2$fy_end <- as.Date(test_data$fy_end)
+library(RPostgreSQL)
+
+pg <- dbConnect(PostgreSQL())
+
+rs <- dbWriteTable(pg, c("director_bio", "test_data_2"), test_data_2 %>% as.data.frame(),
+                   overwrite=TRUE, row.names=FALSE)
+rs <- dbDisconnect(pg)
