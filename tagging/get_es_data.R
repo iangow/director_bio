@@ -47,11 +47,13 @@ bio_data$text <- NULL
 
 bio_data$ranges <- unlist(mclapply(bio_data$ranges, toJSON, mc.cores=12))
 
-bio_data$updated <- as.POSIXct(strptime(bio_data$updated, "%Y-%m-%dT%H:%M:%OS"))
-bio_data$created <- as.POSIXct(strptime(bio_data$created, "%Y-%m-%dT%H:%M:%OS"))
+bio_data$updated <- as.POSIXct(strptime(bio_data$updated, "%Y-%m-%dT%H:%M:%OS",
+                                        tz = "UTC"))
+bio_data$created <- as.POSIXct(strptime(bio_data$created, "%Y-%m-%dT%H:%M:%OS",
+                                        tz = "UTC"))
 bio_data$category <- gsub("http://[^/]+//?(\\w+)/.*$", "\\1", bio_data$uri)
 
-# What is this step doing?
+# Delete prototype tagging where category=="bio"
 bio_data <- subset(bio_data, category!="bio")
 bio_data$category[bio_data$category=="highlight"] <- "bio"
 bio_data$file_name <-
@@ -61,7 +63,7 @@ bio_data$file_name <-
 # Push data to PostgreSQL ----
 library(RPostgreSQL)
 pg <- dbConnect(PostgreSQL())
-
+dbGetQuery(pg, "SET TIMEZONE TO 'UTC'")
 rs <- dbWriteTable(pg, c("director_bio", "raw_tagging_data"), bio_data,
              overwrite=TRUE, row.names=FALSE)
 
