@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 import re
 
-def name_to_pattern(name):
+def name_to_pattern(name, spaces_optional=False):
     """This function takes a name and converts it to a regular expression
     pattern for matching.
     """
@@ -10,11 +10,13 @@ def name_to_pattern(name):
     pattern = re.sub(r'\s*[\\/]([A-Z]+|DE|IN|OHIO)[\\/]', "", name)
     pattern = re.sub(r'/[A-Z]{2}$', "", pattern)
 
+    # Remove multiple spaces
+    pattern = re.sub(r'\s{2,}', ' ', pattern)
+
     # Replace special regex characters
     pattern = re.escape(pattern)
 
     pattern = re.sub(r'\\ ', ' ', pattern)
-    pattern = re.sub(r'\\s', '\s', pattern)
 
     # Strip leading and trailing spaces
     pattern = re.sub(r'^\s+', "", pattern)
@@ -35,18 +37,24 @@ def name_to_pattern(name):
 
     # Variants on incorporated, corporation, etc., which are often omitted
     pattern = re.sub(r'\s+CO(MPANY)?\b', "(?: Co(?:\.|mpany)?)?", pattern)
-    pattern = re.sub(r'\s+INC(?:\b|\.|ORPORATED)', "(?: Inc(?:\.|orporated)?)?", pattern)
-    pattern = re.sub(r'\s+(?:CORP|ORATION)\b\.?', "(?: Co(?:rp(?:oration)?))?", pattern)
+    pattern = re.sub(r'\s+(?:INC(?:\b|\.|ORPORATED))', "(?: Inc(?:\.|orporated)?)?", pattern)
+    pattern = re.sub(r'\s+(?:CORP(?:\b|\.|ORATION))', "(?: Co(?:rp(?:oration)?))?", pattern)
     pattern = re.sub(r'\s+HOLDINGS\b', "(?: Holdings)?", pattern)
     pattern = re.sub(r'\s+GROUP\b', "(?: Group)?", pattern)
     pattern = re.sub(r'\s+LTD\b', "(?: Ltd)?", pattern)
 
-    # Allow spaces to be matched by hyphens
-    pattern = re.sub(r'-\s+', '-', pattern)
-    pattern = re.sub(r'(?:\\\-|\s)+', r'[\-\s]+', pattern)
-
     # Allow "and" to be matched by "&" and vice versa
-    pattern = re.sub(r'(?<=\s)(and|&)(?=\s)', '(?:and|&)', pattern)
+    pattern = re.sub(r'(?<=\s)(and|\\&)(?=\s)', '(?:and|&)', pattern)
+
+    # Remove spaces after hyphens
+    pattern = re.sub(r'-\s+', '-', pattern)
+
+    if spaces_optional:
+        pattern = re.sub(r'\\s', '\s?', pattern)
+        pattern = re.sub(r'(?:\\\-|\s)+', r'[\-\s]?', pattern)
+    else:
+        pattern = re.sub(r'\\s', '\s', pattern)
+        pattern = re.sub(r'(?:\\\-|\s)+', r'[\-\s]+', pattern)
 
     # Add parentheses
     pattern = '(?:' + pattern + ')'
@@ -77,7 +85,7 @@ def apply_regex(bio, pattern):
     cleaned_bio = clean_bio(bio)
     return re.findall(pattern, cleaned_bio, flags=re.I)
 
-def names_to_pattern(names):
+def names_to_pattern(names, spaces_optional=False):
     """This function takes a list of names and returns a regular expression
     pattern that can be used to match them in text
     """
@@ -87,7 +95,7 @@ def names_to_pattern(names):
     # Only check distinct names
     names = list(set(names))
 
-    patterns = [name_to_pattern(name) for name in names]
+    patterns = [name_to_pattern(name, spaces_optional) for name in names]
     pattern = '(' + '|'.join(patterns) + ')'
     return pattern
 
@@ -119,5 +127,6 @@ def names_in_bio(bio, names):
     if result_2:
         return result_2
     else:
+        pattern = names_to_pattern(names, spaces_optional=True)
         result_3 = apply_regex(edit_bio_alt(bio), pattern)
         return result_3
