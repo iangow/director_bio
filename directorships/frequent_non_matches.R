@@ -22,8 +22,7 @@ non_matches <- tbl(pg, sql("
             AND (date_filed < other_end_date OR other_end_date IS NULL)
             AND other_public_co
         GROUP BY 1
-        ORDER BY 3 DESC
-        LIMIT 1000),
+        ORDER BY 3 DESC),
 
     bio_data AS (
         SELECT director_id, fy_end, file_name
@@ -50,7 +49,8 @@ non_matches <- tbl(pg, sql("
     USING (director_id, fy_end)
     INNER JOIN director
     USING (director_id, fy_end)
-    ORDER BY other_equilar_id, director_id, fy_end")) %>%
+    ORDER BY num_non_matches DESC, other_equilar_id, director_id, fy_end
+    LIMIT 1000")) %>%
     collect()
 
 get_directorship_url <- function(file_name, director_id) {
@@ -70,11 +70,3 @@ library(readr)
 non_matches$director_id <- paste0("'", non_matches$director_id)
 non_matches$other_director_id <- paste0("'", non_matches$other_director_id)
 write_csv(non_matches, path="~/Google Drive/director_bio/non_matches.csv")
-
-# library(googlesheets)
-#
-# # As a one-time thing per user and machine, you will need to run gs_auth()
-# # to authorize googlesheets to access your Google Sheets.
-#
-# gs <- gs_new()
-# gs_ws_new(gs, "non_matches", non_matches)
