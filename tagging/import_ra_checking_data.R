@@ -11,9 +11,10 @@ get_ra_data <- function(sheet_num) {
         mutate(sheet=ws)
 }
 
-# There are 7 worksheets to import and combine
-ra_checked <- lapply(1:7, get_ra_data) %>%
-	do.call("rbind", .)
+# There are 12 worksheets to import and combine
+ra_checked <- lapply(1:12, get_ra_data) %>%
+	do.call("rbind", .) %>%
+    mutate(fy_end=as.Date(fy_end))
 
 library(RPostgreSQL)
 
