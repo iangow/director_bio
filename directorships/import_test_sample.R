@@ -19,8 +19,8 @@ get_test_sample <- function(sheet_num) {
         mutate(sheet=ws)
 }
 
-# There are 3 worksheets to import and combine
-test_sample <- lapply(1:3, get_test_sample) %>%
+# There are 4 worksheets to import and combine
+test_sample <- lapply(1:4, get_test_sample) %>%
 	do.call("rbind", .)
 
 test_sample$fy_end <- as.Date(test_sample$fy_end)
@@ -46,48 +46,3 @@ rs <- dbGetQuery(pg, "
 
 rs <- dbDisconnect(pg)
 rm(pg)
-
-pg <- src_postgres()
-rs <- dbGetQuery(pg$con, "SET work_mem='1GB'")
-
-who_tagged_sql <- sql("
-    WITH who_tagged AS (
-        SELECT director, file_name, array_agg(DISTINCT username) AS tagged_by
-        FROM director_bio.raw_tagging_data
-        WHERE category='bio'
-        GROUP BY director, file_name)
-    SELECT a.proposed_resolution, c.tagged_by
-    FROM director_bio.test_sample AS a
-    INNER JOIN director_bio.bio_data
-    USING (director_id, fy_end)
-    INNER JOIN who_tagged AS c
-    USING (director, file_name)")
-
-who_tagged <-
-    tbl(pg, who_tagged_sql)
-
-who_tagged %>%
-    collect() %>%
-    with(table(tagged_by, proposed_resolution))
-
-merged_test <-
-    tbl(pg, sql("
-        SELECT *
-        FROM director_bio.test_sample
-        INNER JOIN director_bio.regex_results
-        USING (director_id, other_director_id, fy_end)")) %>%
-    collect()
-
-merged_test %>%
-    with(table(proposed_resolution, non_match))
-
-results <-
-    merged_test %>%
-    filter(non_match, !is.na(other_dir_undisclosed)) %>%
-    group_by(other_dir_undisclosed) %>%
-    summarize(count=n())
-
-accuracy <- subset(results, other_dir_undisclosed,
-                   select=count)/sum(results$count)
-sprintf("For a sample of %3.0f non-matches, accuracy is currently %3.2f%%.",
-        sum(results$count), accuracy*100)
