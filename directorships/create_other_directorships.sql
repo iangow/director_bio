@@ -123,6 +123,12 @@ other_dirs AS (
     LEFT JOIN stockdates AS d
     ON b.other_equilar_id=d.equilar_id),
 
+--
+director_gvkeys AS (
+    SELECT DISTINCT director_id, test_date, gvkey, cik, test_date_type
+    FROM director.director_gvkeys
+    WHERE valid_date AND gvkey IS NOT NULL),
+
 -- Choose the relevant "test date" for the other directorship
 matched_other_fyr AS (
     SELECT a.director_id, a.fy_end, a.other_director_id,
@@ -130,7 +136,7 @@ matched_other_fyr AS (
     FROM other_dirs AS a
     INNER JOIN filing_dates AS b
     USING (equilar_id, fy_end)
-    LEFT JOIN director.director_gvkeys AS c
+    LEFT JOIN director_gvkeys AS c
     ON a.other_director_id=c.director_id
         AND c.test_date <= b.date_filed
         -- Exclude future directorships!!
@@ -142,7 +148,7 @@ other_gvkeys AS (
     SELECT a.director_id, a.fy_end, a.other_director_id, a.test_date,
         b.test_date_type, b.gvkey AS other_gvkey, b.cik AS other_cik
     FROM matched_other_fyr AS a
-    LEFT JOIN director.director_gvkeys AS b
+    LEFT JOIN director_gvkeys AS b
     ON a.other_director_id=b.director_id AND
         a.test_date=b.test_date)
 
