@@ -123,39 +123,36 @@ other_dirs AS (
     LEFT JOIN stockdates AS d
     ON b.other_equilar_id=d.equilar_id),
 
--- Choose the relevant fiscal year for the other directorship
+-- Choose the relevant "test date" for the other directorship
 matched_other_fyr AS (
     SELECT a.director_id, a.fy_end, a.other_director_id,
-        max(c.fy_end) AS other_fy_end
+        max(c.test_date) AS test_date
     FROM other_dirs AS a
     INNER JOIN filing_dates AS b
     USING (equilar_id, fy_end)
-    LEFT JOIN gvkeys AS c
-    ON (a.other_director_id).equilar_id=c.equilar_id
-        AND c.fy_end <= b.date_filed AND c.fy_end <= a.other_end_date
+    LEFT JOIN director.director_gvkeys AS c
+    ON a.other_director_id=c.director_id
+        AND c.test_date <= b.date_filed
         -- Exclude future directorships!!
-        AND b.date_filed >= a.other_start_date
+        -- AND b.date_filed >= a.other_start_date
     GROUP BY 1, 2, 3),
 
--- Then add the GVKEY associated with that other fiscal year
+-- Then add the GVKEY associated with that other "test date"
 other_gvkeys AS (
-    SELECT a.director_id, a.fy_end, a.other_director_id,
-        a.other_fy_end, b.gvkey AS other_gvkey, b.cik AS other_cik
+    SELECT a.director_id, a.fy_end, a.other_director_id, a.test_date,
+        b.test_date_type, b.gvkey AS other_gvkey, b.cik AS other_cik
     FROM matched_other_fyr AS a
-    LEFT JOIN gvkeys AS b
-    ON (a.other_director_id).equilar_id=b.equilar_id AND
-        a.other_fy_end=b.fy_end)
+    LEFT JOIN director.director_gvkeys AS b
+    ON a.other_director_id=b.director_id AND
+        a.test_date=b.test_date)
 
 -- Add in data on other firm
 SELECT a.*,
-    b.other_fy_end, b.other_gvkey, b.other_cik
+    b.test_date, b.test_date_type, b.other_gvkey, b.other_cik
     --, c.date_filed
 FROM other_dirs AS a
 INNER JOIN other_gvkeys AS b
-USING (director_id, fy_end, other_director_id)
--- INNER JOIN filing_dates AS c
--- USING (equilar_id, fy_end)
-;
+USING (director_id, fy_end, other_director_id);
 
 -- Do some database admin tasks (some for performance)
 ALTER TABLE director_bio.other_directorships OWNER TO director_bio_team;
