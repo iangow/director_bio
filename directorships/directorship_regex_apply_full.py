@@ -12,7 +12,7 @@ engine = create_engine('postgresql://iangow.me/crsp')
 sql = """
     SELECT DISTINCT director_id::text, fy_end, a.file_name, a.bio,
         b.other_director_id::text,
-        array_cat(array_cat(other_directorship_names, tagged_names),
+        array_cat(array_cat(other_directorships, tagged_names),
                     sec_names) AS other_names
     FROM director_bio.bio_data AS a
     INNER JOIN director_bio.other_directorships AS b

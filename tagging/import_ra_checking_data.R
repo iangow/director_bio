@@ -20,7 +20,8 @@ library(RPostgreSQL)
 
 pg <- dbConnect(PostgreSQL())
 
-rs <- dbWriteTable(pg, c("director_bio", "ra_checked"), ra_checked %>% as.data.frame(),
+rs <- dbWriteTable(pg, c("director_bio", "ra_checked"),
+                   ra_checked %>% as.data.frame(),
                    overwrite=TRUE, row.names=FALSE)
 
 rs <- dbGetQuery(pg, "
