@@ -1,31 +1,94 @@
-SET work_mem='5GB';
+SET work_mem='15GB';
 
 DROP TABLE IF EXISTS director_bio.other_directorships;
 
 CREATE TABLE director_bio.other_directorships AS
 WITH
 
+-- Currently using the earliest filing date. This should be based on the filing
+-- date of the filing we get the bios from.
+filing_dates AS (
+    SELECT equilar_id, fy_end, min(date_filed) AS date_filed
+    FROM director.equilar_proxies
+    GROUP BY 1, 2),
+
+-- Pull together the list of company names associated with each firm
+companies AS (
+    SELECT DISTINCT director.equilar_id(company_id) AS equilar_id,
+        array_agg(DISTINCT company) AS companies
+    FROM director.co_fin
+    GROUP BY 1),
+
+-- Collect GVKEYs & CIKs for each Equilar firm-year
+gvkeys AS (
+    SELECT DISTINCT equilar_id, fy_end, a.cik, a.gvkey
+    FROM director.equilar_proxies AS a
+    WHERE valid_date AND gvkey IS NOT NULL),
+
+-- Check upstream code for db_merge. I'm only using this for CUSIPs now.
+-- Does db_merge add much in this respect?
+stockdates AS (
+    SELECT equilar_id,
+        array_agg(DISTINCT permno) AS permnos,
+        min(namedt) AS first_date,
+        max(nameenddt) AS last_date
+    FROM crsp.stocknames AS a
+    INNER JOIN (
+        SELECT DISTINCT equilar_id, cusip AS ncusip
+        FROM director.db_merge) AS b
+    USING (ncusip)
+    GROUP BY 1),
+
+-- The set of director-firm-year observations.
 director AS (
-    SELECT DISTINCT (director.equilar_id(director_id),
-            director.director_id(director_id))::equilar_director_id AS director_id,
+    SELECT (director.equilar_id(director_id),
+        director.director_id(director_id))::equilar_director_id AS director_id,
         director.equilar_id(director_id), fy_end
     FROM director.director),
 
-db_merge AS (
-    SELECT equilar_id, fy_end, b.cusip, companies, b.cik, gvkey
-    FROM director.db_merge AS a
-    INNER JOIN director.equilar_proxies AS b
-    USING (equilar_id, fy_end)),
-
-matched_ids AS (
+-- Extract data on matched director_id values
+matched_ids_all AS (
     SELECT director_id, (director_id).equilar_id,
         UNNEST(matched_ids) AS other_director_id,
 	    (UNNEST(matched_ids)).equilar_id AS other_equilar_id,
 	    directorid
     FROM director.director_matches),
 
+-- Drop observations on the same firm (clearly not *other* directorships)
+matched_ids AS (
+    SELECT *
+    FROM matched_ids_all
+    WHERE equilar_id!=other_equilar_id),
+
+other_directorships AS (
+    SELECT DISTINCT
+        a.director_id, a.fy_end, a.equilar_id,
+
+        -- Matched director-level data
+        c.directorid,
+        c.other_equilar_id,
+        c.other_director_id,
+
+        -- Identifiers for the "other" company
+        d.companies AS other_directorships
+
+    FROM director AS a
+    INNER JOIN matched_ids AS c
+    USING (director_id)
+    INNER JOIN companies AS d
+    ON d.equilar_id=c.other_equilar_id),
+
+-- Add GVKEY and CIKs
+other_directorships_w_gvkeys AS (
+    SELECT a.*, b.gvkey, b.cik, c.date_filed
+    FROM other_directorships AS a
+    LEFT JOIN gvkeys AS b
+    USING (equilar_id, fy_end)
+    INNER JOIN filing_dates AS c
+    USING (equilar_id, fy_end)),
+
 term_dates AS (
-    SELECT (equilar_id, director_id)::equilar_director_id AS director_id,
+    SELECT director_id,
         start_date,
         COALESCE(end_date, boardex_term_end_date,
                  implied_end_date, last_fy_end) AS end_date,
@@ -37,83 +100,66 @@ term_dates AS (
         END AS end_date_source
     FROM director.term_end_dates),
 
-other_directorships AS (
-    SELECT DISTINCT
-        a.director_id, a.fy_end, a.equilar_id,
-
-        -- Identifiers for "this" company
-        b.companies,
-        b.cusip, b.gvkey, b.cik,
-
-        -- Matched director-level data
-        c.directorid,
-        (c.other_director_id).equilar_id AS other_equilar_id,
-        c.other_director_id,
-
-        -- Identifiers for the "other" company
-        d.companies AS other_directorships,
-        d.cusip AS other_cusip,
-        d.cik AS other_cik,
-        d.gvkey AS other_gvkey
-    FROM director AS a
-    INNER JOIN db_merge AS b
-    USING (equilar_id, fy_end)
-    INNER JOIN matched_ids AS c
-    USING (director_id)
-    LEFT JOIN db_merge AS d
-    ON (other_director_id).equilar_id=d.equilar_id
-    WHERE director_id != other_director_id),
-
 other_directorships_dates AS (
     SELECT a.*,
         b.start_date, b.end_date, b.end_date_source,
         c.start_date AS other_start_date,
         c.end_date AS other_end_date,
         c.end_date_source AS other_end_date_source
-    FROM other_directorships AS a
+    FROM other_directorships_w_gvkeys AS a
     INNER JOIN term_dates AS b
     USING (director_id)
-    LEFT JOIN term_dates AS c
+    INNER JOIN term_dates AS c
     ON c.director_id = a.other_director_id),
 
-original_names AS (
-    SELECT DISTINCT director.equilar_id(company_id) AS other_equilar_id,
-        array_agg(DISTINCT company) AS other_directorship_names
-    FROM director.co_fin
-    GROUP BY 1),
+other_dirs AS (
+    SELECT DISTINCT b.*,
+        (other_start_date, COALESCE(other_end_date, d.last_date))
+            OVERLAPS
+        (d.first_date, d.last_date) AS other_public_co,
+        d.first_date AS other_first_date,
+        d.last_date AS other_last_date
+    FROM other_directorships_dates AS b
+    LEFT JOIN stockdates AS d
+    ON b.other_equilar_id=d.equilar_id),
 
-stockdates AS (
-    SELECT other_equilar_id,
-        array_agg(DISTINCT permno) AS other_permnos,
-        min(namedt) AS other_first_date,
-        max(nameenddt) AS other_last_date
-    FROM crsp.stocknames AS a
-    INNER JOIN (
-        SELECT DISTINCT equilar_id AS other_equilar_id, cusip AS ncusip
-        FROM db_merge) AS b
-    USING (ncusip)
-    GROUP BY 1),
+-- Choose the relevant fiscal year for the other directorship
+matched_other_fyr AS (
+    SELECT a.director_id, a.fy_end, a.other_director_id,
+        max(c.fy_end) AS other_fy_end
+    FROM other_dirs AS a
+    INNER JOIN filing_dates AS b
+    USING (equilar_id, fy_end)
+    LEFT JOIN gvkeys AS c
+    ON (a.other_director_id).equilar_id=c.equilar_id
+        AND c.fy_end <= b.date_filed AND c.fy_end <= a.other_end_date
+        -- Exclude future directorships!!
+        AND b.date_filed >= a.other_start_date
+    GROUP BY 1, 2, 3),
 
-dupes AS (
-    SELECT director_id, count(*) > 1 AS directorid_issue
-    FROM director.director_matches
-    GROUP BY director_id)
+-- Then add the GVKEY associated with that other fiscal year
+other_gvkeys AS (
+    SELECT a.director_id, a.fy_end, a.other_director_id,
+        a.other_fy_end, b.gvkey AS other_gvkey, b.cik AS other_cik
+    FROM matched_other_fyr AS a
+    LEFT JOIN gvkeys AS b
+    ON (a.other_director_id).equilar_id=b.equilar_id AND
+        a.other_fy_end=b.fy_end)
 
-SELECT DISTINCT *,
-    (other_start_date, COALESCE(other_end_date, other_last_date))
-        OVERLAPS
-    (other_first_date, other_last_date) AS other_public_co
-FROM other_directorships_dates AS b
-INNER JOIN original_names
-USING (other_equilar_id)
-LEFT JOIN stockdates
-USING (other_equilar_id)
-INNER JOIN dupes
-USING (director_id);
+-- Add in data on other firm
+SELECT a.*,
+    b.other_fy_end, b.other_gvkey, b.other_cik
+    --, c.date_filed
+FROM other_dirs AS a
+INNER JOIN other_gvkeys AS b
+USING (director_id, fy_end, other_director_id)
+-- INNER JOIN filing_dates AS c
+-- USING (equilar_id, fy_end)
+;
 
+-- Do some database admin tasks (some for performance)
 ALTER TABLE director_bio.other_directorships OWNER TO director_bio_team;
-
 SET maintenance_work_mem='1GB';
 CREATE INDEX ON director_bio.other_directorships (director_id);
-CREATE INDEX ON director_bio.other_directorships (director_id, other_directorships);
+CREATE INDEX ON director_bio.other_directorships (director_id, other_director_id);
 CREATE INDEX ON director_bio.other_directorships (director_id, fy_end);
