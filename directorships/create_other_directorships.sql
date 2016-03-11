@@ -139,8 +139,6 @@ matched_other_fyr AS (
     LEFT JOIN director_gvkeys AS c
     ON a.other_director_id=c.director_id
         AND c.test_date <= b.date_filed
-        -- Exclude future directorships!!
-        -- AND b.date_filed >= a.other_start_date
     GROUP BY 1, 2, 3),
 
 -- Then add the GVKEY associated with that other "test date"
@@ -159,6 +157,8 @@ SELECT a.*,
 FROM other_dirs AS a
 INNER JOIN other_gvkeys AS b
 USING (director_id, fy_end, other_director_id);
+-- Exclude future directorships!!
+-- WHERE date_filed >= other_start_date;
 
 -- Do some database admin tasks (some for performance)
 ALTER TABLE director_bio.other_directorships OWNER TO director_bio_team;
