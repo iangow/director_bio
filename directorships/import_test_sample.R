@@ -1,6 +1,6 @@
 
 library(googlesheets)
-library(dplyr)
+suppressPackageStartupMessages(library(dplyr))
 
 # Get the first test sample ----
 # You might need to run the next line first (remove # to do so).
@@ -20,7 +20,7 @@ get_test_sample <- function(sheet_num) {
 }
 
 # There are 4 worksheets to import and combine
-test_sample <- lapply(1:4, get_test_sample) %>%
+test_sample <- lapply(1:5, get_test_sample) %>%
 	do.call("rbind", .)
 
 test_sample$fy_end <- as.Date(test_sample$fy_end)
