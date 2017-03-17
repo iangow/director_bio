@@ -6,14 +6,14 @@ CREATE TABLE director_bio.bio_data AS
 WITH
 
 directors AS (
-    SELECT director.equilar_id(director_id) AS equilar_id,
-        director.director_id(director_id) AS director_id,
+    SELECT director_old.equilar_id(director_id) AS equilar_id,
+        director_old.director_id(director_id) AS director_id,
         fy_end, director
-    FROM director.director),
+    FROM director_old.director),
 
 proxy_filings AS (
     SELECT DISTINCT equilar_id, fy_end, file_name
-    FROM director.equilar_proxies
+    FROM director_old.equilar_proxies
     WHERE file_name IS NOT NULL),
 
 directors_w_proxies AS (

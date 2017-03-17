@@ -23,15 +23,15 @@ tagged_data AS (
         regexp_replace(regexp_replace(quote, '\n', ' '), '\s+', ' ')
             AS as_tagged
     FROM director_bio.raw_tagging_data
-    INNER JOIN director.equilar_proxies
+    INNER JOIN director_old.equilar_proxies
     USING (file_name)
     WHERE category='directorships' AND director != 'Company Not Found'
         AND uri ~ '.*ships/\d+/\d+/(.*)'),
 
 tagged_data_ids AS (
-    SELECT (director.equilar_id(director_id),
-        director.director_id(director_id))::equilar_director_id AS director_id,
-        director.equilar_id(director_id) AS equilar_id,
+    SELECT (director_old.equilar_id(director_id),
+        director_old.director_id(director_id))::equilar_director_id AS director_id,
+        director_old.equilar_id(director_id) AS equilar_id,
         fy_end,
         file_name, other_directorship, directorship_present,
         as_tagged, uri

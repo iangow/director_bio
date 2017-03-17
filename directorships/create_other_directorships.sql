@@ -9,20 +9,20 @@ WITH
 -- date of the filing we get the bios from.
 filing_dates AS (
     SELECT equilar_id, fy_end, min(date_filed) AS date_filed
-    FROM director.equilar_proxies
+    FROM director_old.equilar_proxies
     GROUP BY 1, 2),
 
 -- Pull together the list of company names associated with each firm
 companies AS (
-    SELECT DISTINCT director.equilar_id(company_id) AS equilar_id,
+    SELECT DISTINCT director_old.equilar_id(company_id) AS equilar_id,
         array_agg(DISTINCT company) AS companies
-    FROM director.co_fin
+    FROM director_old.co_fin
     GROUP BY 1),
 
 -- Collect GVKEYs & CIKs for each Equilar firm-year
 gvkeys AS (
     SELECT DISTINCT equilar_id, fy_end, a.cik, a.gvkey
-    FROM director.equilar_proxies AS a
+    FROM director_old.equilar_proxies AS a
     WHERE valid_date AND gvkey IS NOT NULL),
 
 -- Check upstream code for db_merge. I'm only using this for CUSIPs now.
@@ -35,16 +35,16 @@ stockdates AS (
     FROM crsp.stocknames AS a
     INNER JOIN (
         SELECT DISTINCT equilar_id, cusip AS ncusip
-        FROM director.db_merge) AS b
+        FROM director_old.db_merge) AS b
     USING (ncusip)
     GROUP BY 1),
 
 -- The set of director-firm-year observations.
 director AS (
-    SELECT (director.equilar_id(director_id),
-        director.director_id(director_id))::equilar_director_id AS director_id,
-        director.equilar_id(director_id), fy_end
-    FROM director.director),
+    SELECT (director_old.equilar_id(director_id),
+        director_old.director_id(director_id))::equilar_director_id AS director_id,
+        director_old.equilar_id(director_id), fy_end
+    FROM director_old.director),
 
 -- Extract data on matched director_id values
 matched_ids_all AS (
@@ -52,7 +52,7 @@ matched_ids_all AS (
         UNNEST(matched_ids) AS other_director_id,
 	    (UNNEST(matched_ids)).equilar_id AS other_equilar_id,
 	    directorid
-    FROM director.director_matches),
+    FROM director_old.director_matches),
 
 -- Drop observations on the same firm (clearly not *other* directorships)
 matched_ids AS (
@@ -98,7 +98,7 @@ term_dates AS (
             WHEN implied_end_date IS NOT NULL THEN 'Implied'
             WHEN implied_end_date IS NULL THEN 'Last Year'
         END AS end_date_source
-    FROM director.term_end_dates),
+    FROM director_old.term_end_dates),
 
 other_directorships_dates AS (
     SELECT a.*,
@@ -126,7 +126,7 @@ other_dirs AS (
 --
 director_gvkeys AS (
     SELECT DISTINCT director_id, test_date, gvkey, cik, test_date_type
-    FROM director.director_gvkeys
+    FROM director_old.director_gvkeys
     WHERE valid_date AND gvkey IS NOT NULL),
 
 -- Choose the relevant "test date" for the other directorship
