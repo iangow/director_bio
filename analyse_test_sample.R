@@ -81,6 +81,7 @@ merged_test %>%
 merged_test %>%
     filter(non_match) %>% # , !is.na(other_dir_undisclosed)) %>%
     group_by(sheet) %>%
+    filter(!is.na(other_dir_undisclosed)) %>%
     summarize(count=n(),
               num_incorrect=sum(as.integer(!other_dir_undisclosed)),
               num_correct=sum(as.integer(other_dir_undisclosed))) %>%
@@ -95,11 +96,10 @@ merged_test %>%
 
 merged_test %>%
     filter(non_match) %>%
-    mutate(year = format(fy_end, '%Y')) %>%
+    mutate(year = date_part('year', fy_end)) %>%
     group_by(year) %>%
     summarize(count=n(),
-              prop_correct=sum(other_dir_undisclosed==non_match,
-                               na.rm=TRUE)/n())
+              prop_correct=sum(1*as.integer(other_dir_undisclosed==non_match))/n())
 
 merged_test %>%
     filter(non_match) %>%
