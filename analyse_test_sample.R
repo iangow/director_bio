@@ -21,8 +21,9 @@ directorship_results <-
 
 who_tagged <-
     raw_tagging_data %>%
-    group_by (director, file_name) %>%
     filter(category == 'bio') %>%
+    inner_join(bio_data) %>%
+    group_by(director_id, fy_end) %>%
     summarize(tagged_by = sql("array_agg(DISTINCT username)")) %>%
     ungroup() %>%
     compute()
@@ -31,13 +32,37 @@ tagging_issues <-
     who_tagged %>%
     inner_join(bio_data) %>%
     inner_join(test_sample) %>%
-    select(proposed_resolution, tagged_by) %>%
-    ungroup() %>%
-    compute()
+    semi_join(
+        directorship_results %>%
+            filter(non_match, !future, !past))
 
 tagging_issues %>%
+    filter(proposed_resolution == "tag_bio") %>%
+    mutate(tagger = unnest(tagged_by)) %>%
+    group_by(tagger) %>%
+    summarize(count = n()) %>%
+    arrange(desc(count))
+
+regex_results %>%
+    semi_join(
+        directorship_results %>%
+            filter(non_match, !future, !past) %>%
+            select(director_id, fy_end, other_director_id)) %>%
+    inner_join(who_tagged) %>%
     mutate(tagged_by = unnest(tagged_by)) %>%
-    group_by(tagged_by) %>%
+    mutate(director_id = as.character(director_id),
+           other_director_id = as.character(director_id)) %>%
+    filter(tagged_by=="mmei") %>%
+    distinct() %>%
+    print(n=200)
+
+
+tagging_issues %>%
+    filter(proposed_resolution == "tag_bio") %>%
+    mutate(tagger = unnest(tagged_by)) %>%
+    filter(tagger == "mmei") %>%
+    select(sheet, director_id)
+tagging_issues %>%
     summarize(num_tagged = n(),
            num_wrong = sum(as.integer(!is.na(proposed_resolution))),
            num_bio_wrong = sum(as.integer(proposed_resolution=="tag_bio"))) %>%
@@ -57,7 +82,10 @@ merged_test %>%
     filter(non_match) %>% # , !is.na(other_dir_undisclosed)) %>%
     group_by(sheet) %>%
     summarize(count=n(),
-              prop_correct=sum(other_dir_undisclosed, na.rm=TRUE)/n())
+              num_incorrect=sum(as.integer(!other_dir_undisclosed)),
+              num_correct=sum(as.integer(other_dir_undisclosed))) %>%
+    mutate(prop_correct = 1 * num_correct / count,
+           prop_incorrect = 1 * num_incorrect / count)
 
 merged_test %>%
     filter(non_match) %>%
@@ -84,14 +112,13 @@ who_tagged %>%
     mutate(tagged_by=unnest(tagged_by)) %>%
     left_join(regex_results %>%
                   filter(non_match) %>%
-                  select(file_name) %>%
-                  mutate(non_match = 1L)) %>%
+                  select(file_name)) %>%
     distinct() %>%
     group_by(tagged_by) %>%
-    summarize(num_non_match = sum(non_match),
+    summarize(num_non_match = sum(as.integer(non_match)),
            num_filings = n()) %>%
     group_by(tagged_by) %>%
-    mutate(prop_non_match = num_non_match * 1.0 / num_filings)
+    mutate(prop_non_match = num_non_match * 1 / num_filings)
 
 regex_results %>%
     group_by(file_name) %>%
@@ -106,16 +133,27 @@ regex_results %>%
             select(uri, file_name)) %>%
     arrange(desc(num_non_matches))
 
+rel_results <-
+    directorship_results %>%
+    filter(non_match, !past, !future) %>%
+    inner_join(who_tagged) %>%
+    select(director_id, other_director_id,
+           fy_end, tagged_by) %>%
+    distinct() %>%
+    compute()
+
 test_sample %>%
-    inner_join(
-        directorship_results %>%
-            filter(non_match) %>%
-            inner_join(who_tagged) %>%
-            select(director_id, other_director_id,
-                   fy_end, past, tagged_by) %>%
-            distinct()) %>%
+    inner_join(rel_results) %>%
     mutate(tag_bio = coalesce(proposed_resolution =="tag_bio", FALSE)) %>%
-    filter(!past) %>%
-    mutate(tagged_by = unnest(tagged_by)) %>%
+    # mutate(tagged_by = unnest(tagged_by)) %>%
     as.data.frame() %>%
-    with(table(tag_bio, tagged_by))
+    with(table(tagged_by, tag_bio))
+
+rel_results %>%
+    mutate(username=unnest(tagged_by)) %>%
+    select(-tagged_by) %>%
+    filter(username ~"^gyu") %>%
+    inner_join(bio_data) %>%
+    select(file_name) %>%
+    distinct() %>%
+    count()
