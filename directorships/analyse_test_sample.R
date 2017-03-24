@@ -16,6 +16,9 @@ bio_data <-
 regex_results <-
     tbl(pg, sql("SELECT * FROM director_bio.regex_results"))
 
+other_directorships <-
+    tbl(pg, sql("SELECT * FROM director_bio.other_directorships"))
+
 directorship_results <-
     tbl(pg, sql("SELECT * FROM director_bio.directorship_results"))
 
@@ -91,8 +94,7 @@ merged_test %>%
 merged_test %>%
     filter(non_match) %>%
     summarize(count=n(),
-              prop_correct=sum(other_dir_undisclosed==non_match,
-                               na.rm=TRUE)/n())
+              prop_correct=1*sum(as.integer(other_dir_undisclosed==non_match))/n())
 
 merged_test %>%
     filter(non_match) %>%
@@ -157,3 +159,29 @@ rel_results %>%
     select(file_name) %>%
     distinct() %>%
     count()
+
+tag_directorships <-
+    directorship_results %>%
+    filter(!future, !past) %>%
+    select(other_directorships, non_match) %>%
+    group_by(other_directorships) %>%
+    summarize(num_non_matches = sum(as.integer(non_match)),
+              num_obs = n()) %>%
+    mutate(prop_non_matches = 1 * num_non_matches / num_obs) %>%
+    arrange(desc(num_non_matches)) %>%
+    #filter(num_non_matches > 30) %>%
+    ungroup() %>%
+    mutate(row_num = row_number()) %>%
+    compute()
+
+test_tags <-
+    merged_test %>%
+    inner_join(
+        other_directorships %>%
+            select(other_director_id, other_directorships) %>%
+            distinct()) %>%
+    inner_join(tag_directorships) %>%
+    filter(proposed_resolution == "tag_directorship") %>%
+    select(row_num, num_non_matches, everything()) %>%
+    arrange(row_num) %>%
+    compute()
