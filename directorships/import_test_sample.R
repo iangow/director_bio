@@ -12,15 +12,17 @@ gs <- gs_key("16lq6rFmBUDoALvzAItTxcytVMEDv4yqOGmLFkoJrOqE")
 
 get_test_sample <- function(sheet_num) {
     ws <- paste0("test_sample #", sheet_num)
+    Sys.sleep(3)
     gs_read(gs, ws=ws) %>%
         select(director_id, other_director_id, fy_end,
            other_dir_undisclosed, as_disclosed, comment,
            proposed_resolution) %>%
-        mutate(sheet=ws)
+        mutate(sheet=ws) %>%
+        filter(!is.na(other_dir_undisclosed))
 }
 
-# There are 4 worksheets to import and combine
-test_sample <- lapply(1:5, get_test_sample) %>%
+# There are 6 worksheets to import and combine
+test_sample <- lapply(1:6, get_test_sample) %>%
 	do.call("rbind", .)
 
 test_sample$fy_end <- as.Date(test_sample$fy_end)
