@@ -42,6 +42,7 @@ def name_to_pattern(name, spaces_optional=False):
     pattern = re.sub(r'\s+HOLDINGS\b', "(?: Holdings)?", pattern)
     pattern = re.sub(r'\s+GROUP\b', "(?: Group)?", pattern)
     pattern = re.sub(r'\s+LTD\b', "(?: Ltd)?", pattern)
+    pattern = re.sub(r'\s+N\.?V\.?\b', "(?: N\.?V\.?)?", pattern)
 
     # Allow "and" to be matched by "&" and vice versa
     pattern = re.sub(r'(?<=\s)(and|\\&)(?=\s)', '(?:and|&)', pattern)
@@ -71,6 +72,9 @@ def clean_bio(bio_text):
     # Fix up spaces
     new_text = re.sub(r'\n', " ", new_text)
     new_text = re.sub(r'\s+', " ", new_text)
+
+    # Fix up long dashes
+    new_text = re.sub(r'—', '-', new_text)
 
     new_text = re.sub(r'^\s*(The|THE)\s+', "", new_text)
     new_text = re.sub(r'\b-\s+\b', "-", new_text)
