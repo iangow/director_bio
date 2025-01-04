@@ -16,3 +16,7 @@ as well as data in Equilar (see the [Github repository](https://github.com/iango
 
 - Code in `match_bios.R` does this; depends on `match_bios.sql`, 
 as well as data in Equilar (see the [Github repository](https://github.com/iangow/acct_data/tree/master/equilar)).
+
+## Google Sheets documents
+
+ - [`non_matches`](https://docs.google.com/spreadsheets/d/1L0XqboEEMMkbPH5PBc3rWxDkOMnXCT5EhZ7dsUDFnmM)
