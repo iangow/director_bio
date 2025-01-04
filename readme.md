@@ -22,3 +22,5 @@ as well as data in Equilar (see the [Github repository](https://github.com/iango
  - [`non_matches`](https://docs.google.com/spreadsheets/d/1L0XqboEEMMkbPH5PBc3rWxDkOMnXCT5EhZ7dsUDFnmM)
  - [Director bio tagging issues](https://docs.google.com/spreadsheets/d/1B58Z9MEZsV69MFLIBv8DEv3sddScBYAKY2yM4ggihVo)
 - [`missing_bios_2.xlsx`](https://docs.google.com/spreadsheets/d/1z8x9Owt_ztjCukYEpkc5pDD2vPOQJvrTA9UvW90cgmo/edit?gid=415833271#gid=415833271)
+- [`test_samples`](https://docs.google.com/spreadsheets/d/16lq6rFmBUDoALvzAItTxcytVMEDv4yqOGmLFkoJrOqE/edit?gid=372427779#gid=372427779)
+- [`to_retag`](https://docs.google.com/spreadsheets/d/1PIEYkDnH7cgdelzcLipdw8H9p7Z5dbeg521POfLFhLw)
