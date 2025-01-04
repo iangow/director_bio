@@ -20,3 +20,4 @@ as well as data in Equilar (see the [Github repository](https://github.com/iango
 ## Google Sheets documents
 
  - [`non_matches`](https://docs.google.com/spreadsheets/d/1L0XqboEEMMkbPH5PBc3rWxDkOMnXCT5EhZ7dsUDFnmM)
+ - [Director bio tagging issues](https://docs.google.com/spreadsheets/d/1B58Z9MEZsV69MFLIBv8DEv3sddScBYAKY2yM4ggihVo)
